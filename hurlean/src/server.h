@@ -12,8 +12,8 @@
 namespace hl
 {
 	template <class T>
-	class Server {
-
+	class Server
+	{
 	private:
 		asio::io_context io_context;
 		asio::ip::tcp::acceptor acceptor;
@@ -23,7 +23,8 @@ namespace hl
 	public:
 		// port on which server is going to be running
 		Server(unsigned short port)
-			: acceptor(io_context, asio::ip::tcp::v4(), port) {}
+			: acceptor(io_context, asio::ip::tcp::v4(), port)
+		{}
 		
 		~Server() = default;
 
@@ -37,6 +38,5 @@ namespace hl
 
 	private:
 		void write();
-
 	};
 }

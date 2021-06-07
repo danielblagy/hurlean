@@ -8,8 +8,8 @@
 namespace hl
 {
 	template <class T>
-	class ClientConnection {
-	
+	class ClientConnection
+	{
 	private:
 		Connection connection;
 		std::thread connection_thread;
@@ -20,6 +20,5 @@ namespace hl
 
 	private:
 		void listen();	// used as an update function in connection thread for listening for messages from the client
-
 	};
 }

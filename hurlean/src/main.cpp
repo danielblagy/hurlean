@@ -5,8 +5,10 @@
 #include "server.h"
 
 
-int main() {
-	try {
+int main()
+{
+	try
+	{
 		asio::io_context io_context;
 
 		// ip version 4, port 13
@@ -14,7 +16,8 @@ int main() {
 
 		asio::ip::tcp::acceptor acceptor(io_context, endpoint);
 
-		while (true) {
+		while (true)
+		{
 			asio::ip::tcp::socket socket(io_context);
 			acceptor.accept(socket);	// wait for connection
 
@@ -25,7 +28,8 @@ int main() {
 			asio::write(socket, asio::buffer(message), ignored_error);
 		}
 	}
-	catch (std::exception& e) {
+	catch (std::exception& e)
+	{
 		std::cerr << e.what() << std::endl;
 	}
 	

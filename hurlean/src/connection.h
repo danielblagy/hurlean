@@ -10,8 +10,8 @@
 namespace hl
 {
 	template <class T>
-	class Connection {
-
+	class Connection
+	{
 	private:
 		asio::ip::tcp::socket socket;
 		std::deque<Message> in;
