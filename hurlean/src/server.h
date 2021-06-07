@@ -11,32 +11,32 @@
 
 namespace hl
 {
+	template <class T>
 	class Server {
 
 	private:
 		asio::io_context io_context;
-		//asio::ip::tcp::endpoint endpoint(asio::ip::tcp::v4(), 4545);
-		//asio::ip::tcp::acceptor acceptor(io_context, endpoint);
+		asio::ip::tcp::acceptor acceptor;
 		
-		std::vector<std::shared_ptr<ClientConnection>> connections;
+		std::vector<std::shared_ptr<ClientConnection<T>>> connections;
 
 	public:
-		Server();	// require endpoint info here
+		// port on which server is going to be running
+		Server(unsigned short port)
+			: acceptor(io_context, asio::ip::tcp::v4(), port) {}
+		
 		~Server() = default;
 
-		void run();
-		void update();
+		void start();
+		void update(size_t max_messages);
 	
 	public:
 		virtual void on_client_connect() = 0;
 		virtual void on_client_disconnect() = 0;
 		virtual void on_client_message() = 0;
 
-	protected:
-		void write();
-
 	private:
-		void listen();
+		void write();
 
 	};
 }

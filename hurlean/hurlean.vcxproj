@@ -153,6 +153,12 @@
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\client_connection.h" />
+    <ClInclude Include="src\connection.h" />
+    <ClInclude Include="src\message.h" />
+    <ClInclude Include="src\server.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
