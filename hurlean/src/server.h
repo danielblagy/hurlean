@@ -21,7 +21,7 @@ namespace hl
 		asio::ip::tcp::acceptor acceptor;
 		
 		//std::vector<ClientSession<T>> client_sessions;
-		std::vector<std::shared_ptr<Connection<T>>> client_sessions;
+		std::vector<ClientSession<T>> client_sessions;
 
 		bool running;
 		std::thread accept_thread;
@@ -62,8 +62,7 @@ namespace hl
 
 				// we got connection
 
-				//ClientSession<T> client_session(client_connection);
-				client_sessions.push_back(client_connection);
+				client_sessions.emplace_back(client_connection);
 
 				std::string message = "hello from the class";
 				client_connection->send(message);

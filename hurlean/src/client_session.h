@@ -20,6 +20,11 @@ namespace hl
 			: connection(std::move(_connection))
 		{}
 
+		// a move constructor, because connection_thread is not copyable
+		ClientSession(ClientSession&& o)
+			: connection_thread(std::move(o.connection_thread))
+		{}
+
 		~ClientSession() = default;
 
 	private:
