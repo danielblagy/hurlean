@@ -20,7 +20,6 @@ namespace hl
 		asio::io_context io_context;
 		asio::ip::tcp::acceptor acceptor;
 		
-		//std::vector<ClientSession<T>> client_sessions;
 		std::vector<ClientSession<T>> client_sessions;
 
 		bool running;
@@ -41,11 +40,13 @@ namespace hl
 		void start()
 		{
 			running = true;
-			accept_thread = std::thread(&Server::listen_for_clients, this);
+			accept_thread = std::thread(&Server::accept_client_connections, this);
 		}
 
-		void update(size_t max_messages)
-		{}
+		void update()
+		{
+			
+		}
 	
 	public:
 		virtual void on_client_connect() {};
@@ -53,7 +54,7 @@ namespace hl
 		virtual void on_client_message() {};
 
 	private:
-		void listen_for_clients()
+		void accept_client_connections()
 		{
 			while (running)
 			{
@@ -63,9 +64,10 @@ namespace hl
 				// we got connection
 
 				client_sessions.emplace_back(client_connection);
+				ClientSession& client_session = client_sessions.back();
 
 				std::string message = "hello from the class";
-				client_connection->send(message);
+				client_session.send_to_client(Message<T>( {} ));
 			}
 		}
 		

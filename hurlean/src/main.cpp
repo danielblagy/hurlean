@@ -17,7 +17,7 @@ int main()
 
 	while (true)
 	{
-		server.update(-1);
+		server.update();
 	}
 	
 	return 0;

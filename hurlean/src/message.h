@@ -6,11 +6,16 @@
 namespace hl
 {
 	template <class T>
-	class Message
-	{	
+	struct MessageHeader
+	{
 		T type;
 		uint32_t size;
-
-		std::vector<uint8_t> data;
+	};
+	
+	template <class T>
+	struct Message
+	{	
+		MessageHeader<T> header;
+		std::vector<uint8_t> body;
 	};
 }
