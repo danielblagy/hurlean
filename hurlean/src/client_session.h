@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thread>
+#include <memory>
 
 #include "connection.h"
 
@@ -8,15 +9,18 @@
 namespace hl
 {
 	template <class T>
-	class ClientConnection
+	class ClientSession
 	{
 	private:
-		Connection connection;
+		std::shared_ptr<Connection<T>> connection;
 		std::thread connection_thread;
 
 	public:
-		ClientConnection(const asio::io_context& io_context);
-		~ClientConnection() = default;
+		ClientSession(std::shared_ptr<Connection<T>> _connection)
+			: connection(std::move(_connection))
+		{}
+
+		~ClientSession() = default;
 
 	private:
 		void listen();	// used as an update function in connection thread for listening for messages from the client

@@ -3,10 +3,12 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <thread>
 
 #include <asio.hpp>
 
-#include "client_connection.h"
+#include "connection.h"
+#include "client_session.h"
 
 
 namespace hl
@@ -18,25 +20,57 @@ namespace hl
 		asio::io_context io_context;
 		asio::ip::tcp::acceptor acceptor;
 		
-		std::vector<std::shared_ptr<ClientConnection<T>>> connections;
+		//std::vector<ClientSession<T>> client_sessions;
+		std::vector<std::shared_ptr<Connection<T>>> client_sessions;
+
+		bool running;
+		std::thread accept_thread;
 
 	public:
 		// port on which server is going to be running
 		Server(unsigned short port)
-			: acceptor(io_context, asio::ip::tcp::v4(), port)
+			: acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
 		{}
 		
-		~Server() = default;
+		~Server()
+		{
+			running = false;
+			accept_thread.join();
+		}
 
-		void start();
-		void update(size_t max_messages);
+		void start()
+		{
+			running = true;
+			accept_thread = std::thread(&Server::listen_for_clients, this);
+		}
+
+		void update(size_t max_messages)
+		{}
 	
 	public:
-		virtual void on_client_connect() = 0;
-		virtual void on_client_disconnect() = 0;
-		virtual void on_client_message() = 0;
+		virtual void on_client_connect() {};
+		virtual void on_client_disconnect() {};
+		virtual void on_client_message() {};
 
 	private:
-		void write();
+		void listen_for_clients()
+		{
+			while (running)
+			{
+				std::shared_ptr<Connection<T>> client_connection = std::make_shared<Connection<T>>(io_context);
+				client_connection->wait(acceptor);
+
+				// we got connection
+
+				//ClientSession<T> client_session(client_connection);
+				client_sessions.push_back(client_connection);
+
+				std::string message = "hello from the class";
+				client_connection->send(message);
+			}
+		}
+		
+		void write()
+		{}
 	};
 }
