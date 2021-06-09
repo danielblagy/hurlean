@@ -73,13 +73,16 @@ namespace hl
 		{
 			while ((running = connection->opened))
 			{
-				if (connection->write(connection->out.pop_front()))
+				if (!connection->out.is_empty())
 				{
-					// TODO : maybe log
-				}
-				else
-				{
-					connection->close();
+					if (connection->write(connection->out.pop_front()))
+					{
+						// TODO : maybe log
+					}
+					else
+					{
+						connection->close();
+					}
 				}
 			}
 		}

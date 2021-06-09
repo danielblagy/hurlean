@@ -34,15 +34,17 @@ namespace hl
 			opened = true;
 		}
 
-		bool write(std::string message)
+		bool write(const Message<T>& message)
 		{
 			asio::error_code error;
-			asio::write(socket, asio::buffer(message), error);
+			asio::write(socket, asio::buffer(&message.header, sizeof(MessageHeader<T>)), error);
 
 			if (error)
 			{
-				// TODO : log 'error on writing a message' & error
+				// TODO : log 'error on writing a message header' & error
 			}
+
+			asio::write(socket, asio::buffer(message.body.data(), message.body.size()), error);
 
 			return !error;
 		}

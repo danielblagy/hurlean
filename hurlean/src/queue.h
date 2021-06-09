@@ -43,7 +43,7 @@ namespace hl
 		T pop_front()
 		{
 			std::scoped_lock lock(q_mutex);
-			auto item = std::move(q_mutex.front());
+			auto item = std::move(q.front());
 			q.pop_front();
 			return item;
 		}

@@ -48,10 +48,12 @@ namespace hl
 			
 		}
 	
-	public:
-		virtual void on_client_connect() {};
-		virtual void on_client_disconnect() {};
-		virtual void on_client_message() {};
+	protected:
+		virtual void on_client_connect(ClientSession<T>& client) {};
+		// TODO : call on diconnect
+		virtual void on_client_disconnect(ClientSession<T>& client) {};
+		// TODO : call on message
+		virtual void on_client_message(ClientSession<T>& client, const Message<T>& message) {};
 
 	private:
 		void accept_client_connections()
@@ -64,10 +66,9 @@ namespace hl
 				// we got connection
 
 				client_sessions.emplace_back(client_connection);
-				ClientSession& client_session = client_sessions.back();
+				//ClientSession& client_session = client_sessions.back();
 
-				std::string message = "hello from the class";
-				client_session.send_to_client(Message<T>( {} ));
+				on_client_connect(client_sessions.back());
 			}
 		}
 		
