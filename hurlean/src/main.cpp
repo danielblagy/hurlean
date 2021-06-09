@@ -18,7 +18,7 @@ public:
 	{}
 
 protected:
-	virtual void on_client_connect(hl::ClientSession<MyMessageType>& client) override
+	virtual void on_client_connect(hl::Session<MyMessageType>& client) override
 	{
 		std::string message_string = "hello from the class";
 		int data = 15;
@@ -28,14 +28,14 @@ protected:
 		//hello_message.header.size = sizeof(data);
 		hello_message << data;
 
-		client.send_to_client(hello_message);
+		client.send(hello_message);
 
 	}
 
-	virtual void on_client_disconnect(hl::ClientSession<MyMessageType>& client) override
+	virtual void on_client_disconnect(hl::Session<MyMessageType>& client) override
 	{}
 
-	virtual void on_client_message(hl::ClientSession<MyMessageType>& client, const hl::Message<MyMessageType>& message) override
+	virtual void on_client_message(hl::Session<MyMessageType>& client, const hl::Message<MyMessageType>& message) override
 	{}
 };
 

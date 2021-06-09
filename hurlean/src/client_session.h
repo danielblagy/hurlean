@@ -10,7 +10,7 @@ namespace hl
 {
 	// Manages the connection object (manages in/out messages, provides a thread to listen on connection)
 	template <class T>
-	class ClientSession
+	class Session
 	{
 	private:
 		std::shared_ptr<Connection<T>> connection;
@@ -19,21 +19,21 @@ namespace hl
 		bool running;
 
 	public:
-		ClientSession(std::shared_ptr<Connection<T>> _connection)
+		Session(std::shared_ptr<Connection<T>> _connection)
 			: connection(std::move(_connection))
 		{
 			// start the session
 			running = true;
-			read_thread = std::thread(&ClientSession::listen, this);
-			write_thread = std::thread(&ClientSession::send, this);
+			read_thread = std::thread(&Session::listen, this);
+			write_thread = std::thread(&Session::send, this);
 		}
 
 		// a move constructor, because read_thread and write_thread are not copyable
-		ClientSession(ClientSession&& o)
+		Session(Session&& o)
 			: read_thread(std::move(o.read_thread)), write_thread(std::move(o.write_thread))
 		{}
 
-		~ClientSession()
+		~Session()
 		{
 			running = false;
 			read_thread.join();
@@ -41,7 +41,7 @@ namespace hl
 		}
 
 	public:
-		void send_to_client(const Message<T>& message)
+		void send(const Message<T>& message)
 		{
 			connection->out.push_back(std::move(message));
 		}
