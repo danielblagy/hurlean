@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "../../hurlean/src/client.h"
+#include <hurlean/src/client.h>
 
 
 enum MyMessageType
