@@ -43,7 +43,8 @@ namespace hl
 
 				if (!server_connection->connect_to_server(endpoints))
 				{
-					// TODO : handle the server_session object
+					// TODO : handle the server_session object when connection has failed
+					server_session = std::make_unique<Session<T>>();
 					return false;
 				}
 
@@ -52,6 +53,9 @@ namespace hl
 			catch (std::exception& e)
 			{
 				std::cerr << "Client Exception: " << e.what() << "\n";
+
+				// TODO : handle the server_session object when connection has failed
+				server_session = std::make_unique<Session<T>>();
 
 				return false;
 			}

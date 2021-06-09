@@ -19,6 +19,11 @@ namespace hl
 		bool running;
 
 	public:
+		Session()
+		{
+			running = false;
+		}
+		
 		Session(std::shared_ptr<Connection<T>> _connection)
 			: connection(std::move(_connection))
 		{
