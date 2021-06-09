@@ -8,7 +8,7 @@
 #include <asio.hpp>
 
 #include "connection.h"
-#include "client_session.h"
+#include "session.h"
 
 
 namespace hl
@@ -33,14 +33,20 @@ namespace hl
 		
 		~Server()
 		{
-			running = false;
-			accept_thread.join();
+			stop();
 		}
 
 		void start()
 		{
 			running = true;
 			accept_thread = std::thread(&Server::accept_client_connections, this);
+		}
+
+		void stop()
+		{
+			//io_context.stop();	// I think it's just for async
+			running = false;
+			accept_thread.join();
 		}
 
 		void update()
@@ -61,7 +67,7 @@ namespace hl
 			while (running)
 			{
 				std::shared_ptr<Connection<T>> client_connection = std::make_shared<Connection<T>>(io_context);
-				client_connection->wait(acceptor);
+				client_connection->wait_for_client(acceptor);
 
 				// we got connection
 

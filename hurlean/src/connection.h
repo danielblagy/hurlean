@@ -27,11 +27,25 @@ namespace hl
 				close();
 		}
 
-		// wait for connection
-		void wait(asio::ip::tcp::acceptor& acceptor)
+		// used on server side
+		void wait_for_client(asio::ip::tcp::acceptor& acceptor)
 		{
 			acceptor.accept(socket);
 			opened = true;
+		}
+
+		// used on client side
+		bool connect_to_server(const asio::ip::tcp::resolver::results_type& endpoints)
+		{
+			asio::error_code error;
+			asio::connect(socket, endpoints, error);
+
+			if (error)
+			{
+				// TODO : log 'error on connect to server' & error
+			}
+
+			return !error;
 		}
 
 		bool write(const Message<T>& message)

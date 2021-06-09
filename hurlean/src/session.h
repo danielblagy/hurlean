@@ -25,7 +25,7 @@ namespace hl
 			// start the session
 			running = true;
 			read_thread = std::thread(&Session::listen, this);
-			write_thread = std::thread(&Session::send, this);
+			write_thread = std::thread(&Session::send_out, this);
 		}
 
 		// a move constructor, because read_thread and write_thread are not copyable
@@ -35,9 +35,7 @@ namespace hl
 
 		~Session()
 		{
-			running = false;
-			read_thread.join();
-			write_thread.join();
+			close();
 		}
 
 	public:
@@ -46,9 +44,21 @@ namespace hl
 			connection->out.push_back(std::move(message));
 		}
 
-		Queue<Message<T>> get_incoming_messages()
+		Queue<Message<T>>& get_incoming_messages()
 		{
 			return connection->in;
+		}
+
+		void close()
+		{
+			running = false;
+			read_thread.join();
+			write_thread.join();
+		}
+
+		bool is_open()
+		{
+			return running;
 		}
 
 	private:
@@ -69,7 +79,7 @@ namespace hl
 		}
 
 		// used as an update function in connection thread for listening for messages from the client
-		void send()
+		void send_out()
 		{
 			while ((running = connection->opened))
 			{
