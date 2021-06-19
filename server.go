@@ -9,10 +9,15 @@ import (
 )
 
 
-// TODO : client handling interface (onConnect, onDicsonnec, onMessage)
+type ClientHandler interface {
+	
+	OnClientConnect()
+	OnClientDisconnect()
+	OnClientMessage(message []byte)
+}
 
 
-func StartServer(port int) error {
+func StartServer(port int, clientHandler ClientHandler) error {
 	
 	ln, err := net.Listen("tcp", ":" + strconv.Itoa(port))
 	if err != nil {
@@ -26,29 +31,29 @@ func StartServer(port int) error {
 			return errors.New("Failed to accept a client: " + err.Error())
 		}
 		
-		fmt.Println("A new client has been connected to the server")
+		clientHandler.OnClientConnect()
 		
-		go handleClient(conn)
+		go handleClient(conn, clientHandler)
 	}
 	
 	return nil
 }
 
-func handleClient(conn net.Conn) {
+func handleClient(conn net.Conn, clientHandler ClientHandler) {
 	
 	defer conn.Close()
 	
 	buffer := make([]byte, 1024)
 	
 	for {
-		reqLen, err := conn.Read(buffer)
+		_, err := conn.Read(buffer)
 		
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Server: ", err)
 			
 			return
 		} else {
-			fmt.Println(reqLen)
+			clientHandler.OnClientMessage(buffer)
 		}
 	}
 }

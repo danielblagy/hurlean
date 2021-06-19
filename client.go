@@ -10,6 +10,7 @@ import (
 
 
 func ConnectToServer(ip string, port int) error {
+	
 	conn, err := net.Dial("tcp", ip + ":" + strconv.Itoa(port))
 	if err != nil {
 		return errors.New("Failed to connect to the server: " + err.Error())

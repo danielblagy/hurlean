@@ -10,6 +10,7 @@ import (
 
 
 func main() {
+	
 	if err := hurlean.ConnectToServer("localhost", 8080); err != nil {
 		fmt.Println(err)
 	}
