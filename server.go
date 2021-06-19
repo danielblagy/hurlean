@@ -13,7 +13,7 @@ type ClientHandler interface {
 	
 	OnClientConnect()
 	OnClientDisconnect()
-	OnClientMessage(message []byte)
+	OnClientMessage(message []byte) ([]byte, bool)	// returns (responseMessage, sendResponse)
 }
 
 
@@ -53,7 +53,10 @@ func handleClient(conn net.Conn, clientHandler ClientHandler) {
 			
 			return
 		} else {
-			clientHandler.OnClientMessage(buffer)
+			if responseMessage, sendResponse := clientHandler.OnClientMessage(buffer); sendResponse {
+				// TODO : check for errors
+				conn.Write(responseMessage)
+			}
 		}
 	}
 }

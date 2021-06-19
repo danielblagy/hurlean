@@ -21,10 +21,16 @@ func (ch MyClientHandler) OnClientDisconnect() {
 	fmt.Println("Client has disconnected from the server")
 }
 
-func (ch MyClientHandler) OnClientMessage(message []byte) {
+func (ch MyClientHandler) OnClientMessage(message []byte) ([]byte, bool) {
 	
-	//fmt.Println(reqLen)
-	fmt.Println(string(message))
+	convertedMessage := string(message)
+	
+	fmt.Println(convertedMessage)
+	
+	//responseMessage := "echo from server: " + convertedMessage
+	responseMessage := "echo from server"
+	
+	return []byte(responseMessage), true
 }
 
 

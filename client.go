@@ -25,6 +25,7 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler) e
 	
 	fmt.Println("Successfully connected to the server")
 	
+	// TODO : check for errors
 	conn.Write([]byte("hello server"))
 	
 	buffer := make([]byte, 1024)
