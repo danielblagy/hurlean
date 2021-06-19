@@ -9,9 +9,19 @@ import (
 )
 
 
+type MyServerMessageHandler struct{}
+
+func (mh MyServerMessageHandler) OnServerMessage(message []byte) {
+	
+	fmt.Println(string(message))
+}
+
+
 func main() {
 	
-	if err := hurlean.ConnectToServer("localhost", 8080); err != nil {
+	var mh hurlean.ServerMessageHandler = MyServerMessageHandler{}
+	
+	if err := hurlean.ConnectToServer("localhost", 8080, mh); err != nil {
 		fmt.Println(err)
 	}
 }

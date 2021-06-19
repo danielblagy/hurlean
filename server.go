@@ -41,7 +41,7 @@ func StartServer(port int, clientHandler ClientHandler) error {
 
 func handleClient(conn net.Conn, clientHandler ClientHandler) {
 	
-	defer conn.Close()
+	defer disconnectClient(conn, clientHandler)
 	
 	buffer := make([]byte, 1024)
 	
@@ -56,4 +56,10 @@ func handleClient(conn net.Conn, clientHandler ClientHandler) {
 			clientHandler.OnClientMessage(buffer)
 		}
 	}
+}
+
+func disconnectClient(conn net.Conn, clientHandler ClientHandler) {
+	
+	clientHandler.OnClientDisconnect()
+	conn.Close()
 }
