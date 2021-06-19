@@ -3,25 +3,52 @@ package hurlean
 
 import (
 	"net"
+	"errors"
 	"strconv"
 	"fmt"
 )
 
 
-func StartServer(port int) {
+// TODO : client handling interface (onConnect, onDicsonnec, onMessage)
+
+
+func StartServer(port int) error {
 	
-	socket, err := net.Listen("tcp", ":" + strconv.Itoa(port))
+	ln, err := net.Listen("tcp", ":" + strconv.Itoa(port))
 	if err != nil {
-		fmt.Println("Failed to set up server application", err)
+		return errors.New("Failed to set up server application: " + err.Error())
 	}
+	defer ln.Close()
 	
 	for {
-		conn, err := socket.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
-			fmt.Println("Failed to connect a client", err)
+			return errors.New("Failed to accept a client: " + err.Error())
+		}
+		
+		fmt.Println("A new client has been connected to the server")
+		
+		go handleClient(conn)
+	}
+	
+	return nil
+}
+
+func handleClient(conn net.Conn) {
+	
+	defer conn.Close()
+	
+	buffer := make([]byte, 1024)
+	
+	for {
+		reqLen, err := conn.Read(buffer)
+		
+		if err != nil {
+			fmt.Println(err)
+			
+			return
 		} else {
-			fmt.Println("A new client has been connected to the server")
-			fmt.Println(conn)
+			fmt.Println(reqLen)
 		}
 	}
 }

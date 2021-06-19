@@ -5,9 +5,12 @@ package main
 
 import (
 	"github.com/danielblagy/hurlean"
+	"fmt"
 )
 
 
 func main() {
-	hurlean.StartServer(8080)
+	if err := hurlean.StartServer(8080); err != nil {
+		fmt.Println(err)
+	}
 }
