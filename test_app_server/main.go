@@ -11,21 +11,21 @@ import (
 
 type MyClientHandler struct{}
 
-func (ch MyClientHandler) OnClientConnect() {
+func (ch MyClientHandler) OnClientConnect(id uint32) {
 	
-	fmt.Println("A new client has been connected to the server")
+	fmt.Println("A new client (id", id, ") has been connected to the server")
 }
 
-func (ch MyClientHandler) OnClientDisconnect() {
+func (ch MyClientHandler) OnClientDisconnect(id uint32) {
 	
-	fmt.Println("Client has disconnected from the server")
+	fmt.Println("Client (id", id, ") has disconnected from the server")
 }
 
-func (ch MyClientHandler) OnClientMessage(message []byte) ([]byte, bool) {
+func (ch MyClientHandler) OnClientMessage(id uint32, message []byte) ([]byte, bool) {
 	
 	convertedMessage := string(message)
 	
-	fmt.Println(convertedMessage)
+	fmt.Println(id, ":", convertedMessage)
 	
 	//responseMessage := "echo from server: " + convertedMessage
 	responseMessage := "echo from server"

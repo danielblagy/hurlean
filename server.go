@@ -12,9 +12,9 @@ import (
 
 type ClientHandler interface {
 	
-	OnClientConnect()
-	OnClientDisconnect()
-	OnClientMessage(message []byte) ([]byte, bool)	// returns (responseMessage, sendResponse)
+	OnClientConnect(id uint32)
+	OnClientDisconnect(id uint32)
+	OnClientMessage(id uint32, message []byte) ([]byte, bool)	// returns (responseMessage, sendResponse)
 }
 
 
@@ -26,23 +26,28 @@ func StartServer(port int, clientHandler ClientHandler) error {
 	}
 	defer ln.Close()
 	
+	var idCounter uint32 = 0
+	
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			return errors.New("Failed to accept a client: " + err.Error())
 		}
 		
-		clientHandler.OnClientConnect()
+		newId := idCounter
+		idCounter += 1
 		
-		go handleClient(conn, clientHandler)
+		clientHandler.OnClientConnect(newId)
+		
+		go handleClient(newId, conn, clientHandler)
 	}
 	
 	return nil
 }
 
-func handleClient(conn net.Conn, clientHandler ClientHandler) {
+func handleClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
-	defer disconnectClient(conn, clientHandler)
+	defer disconnectClient(id, conn, clientHandler)
 	
 	messageChannel := make(chan []byte)
 	doneChannel := make(chan struct{})
@@ -50,14 +55,14 @@ func handleClient(conn net.Conn, clientHandler ClientHandler) {
 	var wg = sync.WaitGroup{}
 	
 	wg.Add(2)
-	go listenToMessages(messageChannel, &wg, conn)
-	go handleMessage(messageChannel, doneChannel, &wg, conn, clientHandler)
+	go listenToMessages(messageChannel, doneChannel, &wg, conn)
+	go handleMessage(messageChannel, doneChannel, &wg, id, conn, clientHandler)
 	
 	wg.Wait()
 }
 
 // sender
-func listenToMessages(messageChannel chan <- []byte, wg *sync.WaitGroup, conn net.Conn) {
+func listenToMessages(messageChannel chan<- []byte, doneChannel chan<- struct{}, wg *sync.WaitGroup, conn net.Conn) {
 	
 	buffer := make([]byte, 1024)
 	
@@ -66,8 +71,9 @@ func listenToMessages(messageChannel chan <- []byte, wg *sync.WaitGroup, conn ne
 		
 		if err != nil {
 			fmt.Println("Server: ", err)
-			
-			return
+			//doneChannel <- struct{}{}
+			close(doneChannel)
+			break
 		} else {
 			messageChannel <- buffer
 		}
@@ -77,26 +83,27 @@ func listenToMessages(messageChannel chan <- []byte, wg *sync.WaitGroup, conn ne
 }
 
 // receiver
-func handleMessage(messageChannel <- chan []byte, doneChannel <- chan struct{}, wg *sync.WaitGroup, conn net.Conn, clientHandler ClientHandler) {
+func handleMessage(messageChannel <-chan []byte, doneChannel <-chan struct{}, wg *sync.WaitGroup, id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
+	loop:
 	for {
 		select {
 			case buffer := <- messageChannel:
-				if responseMessage, sendResponse := clientHandler.OnClientMessage(buffer); sendResponse {
+				if responseMessage, sendResponse := clientHandler.OnClientMessage(id, buffer); sendResponse {
 					// TODO : check for errors
 					conn.Write(responseMessage)
 				}
 			
 			case <- doneChannel:
-				break
+				break loop
 		}
 	}
 	
 	wg.Done()
 }
 
-func disconnectClient(conn net.Conn, clientHandler ClientHandler) {
+func disconnectClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
-	clientHandler.OnClientDisconnect()
+	clientHandler.OnClientDisconnect(id)
 	conn.Close()
 }
