@@ -33,15 +33,15 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler) e
 		Body: "hello server",
 	}
 	encoder := gob.NewEncoder(conn)
-	encoder.Encode(helloMessage)
+	if err := encoder.Encode(helloMessage); err != nil {
+		fmt.Println("Client Error (message encoding): ", err)
+	}
 	
 	for {
 		var message Message
 		decoder := gob.NewDecoder(conn)
-		err := decoder.Decode(&message)
-		
-		if err != nil {
-			fmt.Println("Client: ", err)
+		if err := decoder.Decode(&message); err != nil {
+			fmt.Println("Client Error (message decoding): ", err)
 			
 			break
 		} else {

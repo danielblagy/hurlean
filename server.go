@@ -74,10 +74,8 @@ func listenToMessages(messageChannel chan<- Message, doneChannel chan<- struct{}
 	for {
 		var message Message
 		decoder := gob.NewDecoder(conn)
-		err := decoder.Decode(&message)
-		
-		if err != nil {
-			fmt.Println("Server: ", err)
+		if err := decoder.Decode(&message); err != nil {
+			fmt.Println("Server Error (message decoding): ", err)
 			//doneChannel <- struct{}{}
 			close(doneChannel)
 			break
@@ -99,7 +97,9 @@ func handleMessage(messageChannel <-chan Message, doneChannel <-chan struct{}, w
 				if responseMessage, sendResponse := clientHandler.OnClientMessage(id, message); sendResponse {
 					// TODO : check for errors in Write
 					encoder := gob.NewEncoder(conn)
-					encoder.Encode(responseMessage)
+					if err := encoder.Encode(responseMessage); err != nil {
+						fmt.Println("Server Error (message encoding): ", err)
+					}
 				}
 			
 			case <- doneChannel:
