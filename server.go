@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"fmt"
+	"sync"
 )
 
 
@@ -43,6 +44,21 @@ func handleClient(conn net.Conn, clientHandler ClientHandler) {
 	
 	defer disconnectClient(conn, clientHandler)
 	
+	messageChannel := make(chan []byte)
+	doneChannel := make(chan struct{})
+	
+	var wg = sync.WaitGroup{}
+	
+	wg.Add(2)
+	go listenToMessages(messageChannel, &wg, conn)
+	go handleMessage(messageChannel, doneChannel, &wg, conn, clientHandler)
+	
+	wg.Wait()
+}
+
+// sender
+func listenToMessages(messageChannel chan <- []byte, wg *sync.WaitGroup, conn net.Conn) {
+	
 	buffer := make([]byte, 1024)
 	
 	for {
@@ -53,12 +69,30 @@ func handleClient(conn net.Conn, clientHandler ClientHandler) {
 			
 			return
 		} else {
-			if responseMessage, sendResponse := clientHandler.OnClientMessage(buffer); sendResponse {
-				// TODO : check for errors
-				conn.Write(responseMessage)
-			}
+			messageChannel <- buffer
 		}
 	}
+	
+	wg.Done()
+}
+
+// receiver
+func handleMessage(messageChannel <- chan []byte, doneChannel <- chan struct{}, wg *sync.WaitGroup, conn net.Conn, clientHandler ClientHandler) {
+	
+	for {
+		select {
+			case buffer := <- messageChannel:
+				if responseMessage, sendResponse := clientHandler.OnClientMessage(buffer); sendResponse {
+					// TODO : check for errors
+					conn.Write(responseMessage)
+				}
+			
+			case <- doneChannel:
+				break
+		}
+	}
+	
+	wg.Done()
 }
 
 func disconnectClient(conn net.Conn, clientHandler ClientHandler) {
