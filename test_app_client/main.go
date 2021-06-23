@@ -11,9 +11,15 @@ import (
 
 type MyServerMessageHandler struct{}
 
-func (mh MyServerMessageHandler) OnServerMessage(message []byte) {
+func (mh MyServerMessageHandler) OnServerMessage(message hurlean.Message) {
 	
-	fmt.Println(string(message))
+	fmt.Println("")
+	fmt.Println("----------------")
+	fmt.Println("Message from the server")
+	fmt.Println("  Type:", message.Type)
+	fmt.Println("  Size:", message.Size)
+	fmt.Println("  Body:", message.Body)
+	fmt.Println("----------------")
 }
 
 

@@ -21,16 +21,23 @@ func (ch MyClientHandler) OnClientDisconnect(id uint32) {
 	fmt.Println("Client (id", id, ") has disconnected from the server")
 }
 
-func (ch MyClientHandler) OnClientMessage(id uint32, message []byte) ([]byte, bool) {
+func (ch MyClientHandler) OnClientMessage(id uint32, message hurlean.Message) (hurlean.Message, bool) {
 	
-	convertedMessage := string(message)
+	fmt.Println("")
+	fmt.Println("----------------")
+	fmt.Println("Message from", id, ":")
+	fmt.Println("  Type:", message.Type)
+	fmt.Println("  Size:", message.Size)
+	fmt.Println("  Body:", message.Body)
+	fmt.Println("----------------")
 	
-	fmt.Println(id, ":", convertedMessage)
+	responseMessage := hurlean.Message{
+		Type: "echo",
+		Size: 0,
+		Body: "echo from server",
+	}
 	
-	//responseMessage := "echo from server: " + convertedMessage
-	responseMessage := "echo from server"
-	
-	return []byte(responseMessage), true
+	return responseMessage, true
 }
 
 

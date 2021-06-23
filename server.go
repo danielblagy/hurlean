@@ -7,14 +7,21 @@ import (
 	"strconv"
 	"fmt"
 	"sync"
+	"encoding/gob"
 )
 
+
+type Message struct {
+	Type string
+	Size uint32
+	Body string
+}
 
 type ClientHandler interface {
 	
 	OnClientConnect(id uint32)
 	OnClientDisconnect(id uint32)
-	OnClientMessage(id uint32, message []byte) ([]byte, bool)	// returns (responseMessage, sendResponse)
+	OnClientMessage(id uint32, message Message) (Message, bool)	// returns (responseMessage, sendResponse)
 }
 
 
@@ -49,7 +56,7 @@ func handleClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
 	defer disconnectClient(id, conn, clientHandler)
 	
-	messageChannel := make(chan []byte)
+	messageChannel := make(chan Message)
 	doneChannel := make(chan struct{})
 	
 	var wg = sync.WaitGroup{}
@@ -62,12 +69,15 @@ func handleClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
 }
 
 // sender
-func listenToMessages(messageChannel chan<- []byte, doneChannel chan<- struct{}, wg *sync.WaitGroup, conn net.Conn) {
+func listenToMessages(messageChannel chan<- Message, doneChannel chan<- struct{}, wg *sync.WaitGroup, conn net.Conn) {
 	
-	buffer := make([]byte, 1024)
+	//buffer := make([]byte, 1024)
 	
 	for {
-		_, err := conn.Read(buffer)
+		//_, err := conn.Read(buffer)
+		var message Message
+		decoder := gob.NewDecoder(conn)
+		err := decoder.Decode(&message)
 		
 		if err != nil {
 			fmt.Println("Server: ", err)
@@ -75,7 +85,8 @@ func listenToMessages(messageChannel chan<- []byte, doneChannel chan<- struct{},
 			close(doneChannel)
 			break
 		} else {
-			messageChannel <- buffer
+			//messageChannel <- buffer
+			messageChannel <- message
 		}
 	}
 	
@@ -83,15 +94,18 @@ func listenToMessages(messageChannel chan<- []byte, doneChannel chan<- struct{},
 }
 
 // receiver
-func handleMessage(messageChannel <-chan []byte, doneChannel <-chan struct{}, wg *sync.WaitGroup, id uint32, conn net.Conn, clientHandler ClientHandler) {
+func handleMessage(messageChannel <-chan Message, doneChannel <-chan struct{}, wg *sync.WaitGroup, id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
 	loop:
 	for {
 		select {
-			case buffer := <- messageChannel:
-				if responseMessage, sendResponse := clientHandler.OnClientMessage(id, buffer); sendResponse {
-					// TODO : check for errors
-					conn.Write(responseMessage)
+			//case buffer := <- messageChannel:
+			case message := <- messageChannel:
+				if responseMessage, sendResponse := clientHandler.OnClientMessage(id, message); sendResponse {
+					// TODO : check for errors in Write
+					encoder := gob.NewEncoder(conn)
+					encoder.Encode(responseMessage)
+					//conn.Write([]byte(responseMessage))
 				}
 			
 			case <- doneChannel:
