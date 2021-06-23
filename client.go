@@ -34,12 +34,8 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler) e
 	}
 	encoder := gob.NewEncoder(conn)
 	encoder.Encode(helloMessage)
-	//conn.Write([]byte("hello server"))
-	
-	//buffer := make([]byte, 1024)
 	
 	for {
-		//_, err := conn.Read(buffer)
 		var message Message
 		decoder := gob.NewDecoder(conn)
 		err := decoder.Decode(&message)

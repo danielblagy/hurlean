@@ -71,10 +71,7 @@ func handleClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
 // sender
 func listenToMessages(messageChannel chan<- Message, doneChannel chan<- struct{}, wg *sync.WaitGroup, conn net.Conn) {
 	
-	//buffer := make([]byte, 1024)
-	
 	for {
-		//_, err := conn.Read(buffer)
 		var message Message
 		decoder := gob.NewDecoder(conn)
 		err := decoder.Decode(&message)
@@ -85,7 +82,6 @@ func listenToMessages(messageChannel chan<- Message, doneChannel chan<- struct{}
 			close(doneChannel)
 			break
 		} else {
-			//messageChannel <- buffer
 			messageChannel <- message
 		}
 	}
@@ -99,13 +95,11 @@ func handleMessage(messageChannel <-chan Message, doneChannel <-chan struct{}, w
 	loop:
 	for {
 		select {
-			//case buffer := <- messageChannel:
 			case message := <- messageChannel:
 				if responseMessage, sendResponse := clientHandler.OnClientMessage(id, message); sendResponse {
 					// TODO : check for errors in Write
 					encoder := gob.NewEncoder(conn)
 					encoder.Encode(responseMessage)
-					//conn.Write([]byte(responseMessage))
 				}
 			
 			case <- doneChannel:
