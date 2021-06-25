@@ -7,10 +7,13 @@ import (
 	"strconv"
 	"fmt"
 	"encoding/gob"
+	"sync"
+	"time"
 )
 
 
 type ClientInstance struct {
+	Connected bool
 	Conn net.Conn
 }
 
@@ -35,7 +38,7 @@ type ClientUpdater interface {
 }
 
 
-func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler) error {
+func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, clientUpdater ClientUpdater) error {
 	
 	conn, err := net.Dial("tcp", ip + ":" + strconv.Itoa(port))
 	if err != nil {
@@ -46,8 +49,24 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler) e
 	fmt.Println("Successfully connected to the server")
 	
 	clientInstance := ClientInstance{
+		Connected: true,
 		Conn: conn,
 	}
+	
+	var clientUpdateWaitGroup = sync.WaitGroup{}
+	clientUpdateWaitGroup.Add(1)
+	
+	go func(clientInstance *ClientInstance, clientUpdateWaitGroup *sync.WaitGroup) {
+		
+		for clientInstance.Connected {
+			clientUpdater.OnClientUpdate(clientInstance)
+		}
+		
+		// DEBUG MESSAGE
+		fmt.Println("ClientUpdate has stopped")
+		
+		clientUpdateWaitGroup.Done()
+	}(&clientInstance, &clientUpdateWaitGroup)
 	
 	helloMessage := Message{
 		Type: "hello",
@@ -55,17 +74,35 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler) e
 	}
 	clientInstance.Send(helloMessage)
 	
-	for {
+	clientInstance.Conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
+	
+	decoder := gob.NewDecoder(clientInstance.Conn)
+	
+	for clientInstance.Connected {
+		// TODO : move message var outside for
 		var message Message
-		decoder := gob.NewDecoder(conn)
 		if err := decoder.Decode(&message); err != nil {
-			fmt.Println("Client Error (message decoding): ", err)
-			
-			break
+			if err.(net.Error).Timeout() {
+				continue
+			} else {
+				fmt.Println("Client Error (message decoding): ", err)
+				break
+			}
 		} else {
 			messageHandler.OnServerMessage(message)
 		}
 	}
 	
+	// DEBUG MESSAGE
+	fmt.Println("ClientRead has stopped")
+	
+	clientUpdateWaitGroup.Wait()
+	
 	return nil
+}
+
+func Disconnect(clientInstance *ClientInstance) {
+	
+	clientInstance.Connected = false
+	clientInstance.Conn.Close()
 }

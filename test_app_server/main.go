@@ -55,9 +55,9 @@ func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance)
 func main() {
 	
 	var myClientHandler hurlean.ClientHandler = MyClientHandler{}
-	var MyServerUpdater hurlean.ServerUpdater = MyServerUpdater{}
+	var myServerUpdater hurlean.ServerUpdater = MyServerUpdater{}
 	
-	if err := hurlean.StartServer(8080, myClientHandler, MyServerUpdater); err != nil {
+	if err := hurlean.StartServer(8080, myClientHandler, myServerUpdater); err != nil {
 		fmt.Println(err)
 	}
 }

@@ -26,15 +26,27 @@ type MyClientUpdater struct{}
 
 func (cu MyClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
 	
-	
+	var input string
+	fmt.Scanln(&input)
+	switch (input) {
+	case "/disconnect":
+		hurlean.Disconnect(clientInstance)
+	default:
+		message := hurlean.Message{
+			Type: "chat message",
+			Body: input,
+		}
+		clientInstance.Send(message)
+	}
 }
 
 
 func main() {
 	
-	var mh hurlean.ServerMessageHandler = MyServerMessageHandler{}
+	var myServerMessageHandler hurlean.ServerMessageHandler = MyServerMessageHandler{}
+	var myClientUpdater hurlean.ClientUpdater = MyClientUpdater{}
 	
-	if err := hurlean.ConnectToServer("localhost", 8080, mh); err != nil {
+	if err := hurlean.ConnectToServer("localhost", 8080, myServerMessageHandler, myClientUpdater); err != nil {
 		fmt.Println(err)
 	}
 }

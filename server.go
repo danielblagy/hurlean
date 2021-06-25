@@ -153,6 +153,7 @@ func listenToMessages(
 	decoder := gob.NewDecoder(conn)
 	
 	for serverInstance.Running {
+		// TODO : move message var outside for
 		var message Message
 		if err := decoder.Decode(&message); err != nil {
 			if err.(net.Error).Timeout() {
