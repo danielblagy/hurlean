@@ -48,6 +48,8 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 		Running: true,
 	}
 	
+	stopSignalChannel := make(chan struct{})
+	
 	var serverUpdateWaitGroup = sync.WaitGroup{}
 	serverUpdateWaitGroup.Add(1)
 	
@@ -59,29 +61,40 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 		
 		fmt.Println("ServerUpdate has stopped")
 		
-		ln.Close()
+		//ln.Close()
+		close(stopSignalChannel)
 		
 		serverUpdateWaitGroup.Done()
 	}(&serverInstance, &serverUpdateWaitGroup)
 	
 	var clientConnectionsWaitGroup = sync.WaitGroup{}
 	
-	for serverInstance.Running {
-		conn, err := ln.Accept()
-		if err != nil {
-			return errors.New("Failed to accept a client: " + err.Error())
+	go func() {
+		
+		loop:
+		for {
+			select {
+			case <- stopSignalChannel:
+				fmt.Println("ServerListen has stopped")
+				break loop
+			
+			default:
+				conn, err := ln.Accept()
+				if err != nil {
+					//return errors.New("Failed to accept a client: " + err.Error())
+					fmt.Println("Failed to accept a client", err)
+				}
+				
+				newId := serverInstance.IDCounter
+				serverInstance.IDCounter += 1
+				
+				clientHandler.OnClientConnect(newId)
+				
+				clientConnectionsWaitGroup.Add(1)
+				go handleClient(stopSignalChannel, &clientConnectionsWaitGroup, newId, conn, clientHandler)
+			}
 		}
-		
-		newId := serverInstance.IDCounter
-		serverInstance.IDCounter += 1
-		
-		clientHandler.OnClientConnect(newId)
-		
-		clientConnectionsWaitGroup.Add(1)
-		go handleClient(&serverInstance, &clientConnectionsWaitGroup, newId, conn, clientHandler)
-	}
-	
-	fmt.Println("ServerListen has stopped")
+	}()
 	
 	clientConnectionsWaitGroup.Wait()
 	
@@ -91,7 +104,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 }
 
 func handleClient(
-	serverInstance *ServerInstance,
+	stopSignalChannel <-chan struct{},
 	clientConnectionsWaitGroup *sync.WaitGroup,
 	id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
@@ -103,46 +116,56 @@ func handleClient(
 	var wg = sync.WaitGroup{}
 	
 	wg.Add(2)
-	go listenToMessages(serverInstance, messageChannel, doneChannel, &wg, conn)
-	go handleMessage(serverInstance, messageChannel, doneChannel, &wg, id, conn, clientHandler)
+	go listenToMessages(stopSignalChannel, messageChannel, doneChannel, &wg, conn)
+	go handleMessage(messageChannel, doneChannel, &wg, id, conn, clientHandler)
 	
 	wg.Wait()
+	
+	fmt.Println(id, "HandleClient has stopped")
 	
 	clientConnectionsWaitGroup.Done()
 }
 
 // sender
 func listenToMessages(
-	serverInstance *ServerInstance,
+	stopSignalChannel <-chan struct{},
 	messageChannel chan<- Message, doneChannel chan<- struct{},
 	wg *sync.WaitGroup,
 	conn net.Conn) {
 	
-	for serverInstance.Running {
-		var message Message
-		decoder := gob.NewDecoder(conn)
-		if err := decoder.Decode(&message); err != nil {
-			fmt.Println("Server Error (message decoding): ", err)
-			//doneChannel <- struct{}{}
-			close(doneChannel)
-			break
-		} else {
-			messageChannel <- message
+	loop:
+	for {
+		select {
+		case <- stopSignalChannel:
+			break loop
+		
+		default:
+			var message Message
+			decoder := gob.NewDecoder(conn)
+			if err := decoder.Decode(&message); err != nil {
+				fmt.Println("Server Error (message decoding): ", err)
+				//doneChannel <- struct{}{}
+				close(doneChannel)
+				break
+			} else {
+				messageChannel <- message
+			}
 		}
 	}
+	
+	fmt.Println("Sender has stopped")
 	
 	wg.Done()
 }
 
 // receiver
 func handleMessage(
-	serverInstance *ServerInstance,
 	messageChannel <-chan Message, doneChannel <-chan struct{},
 	wg *sync.WaitGroup,
 	id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
 	loop:
-	for serverInstance.Running {
+	for {
 		select {
 			case message := <- messageChannel:
 				if responseMessage, sendResponse := clientHandler.OnClientMessage(id, message); sendResponse {
@@ -157,6 +180,8 @@ func handleMessage(
 		}
 	}
 	
+	fmt.Println("Receiver has stopped")
+	
 	wg.Done()
 }
 
@@ -164,4 +189,6 @@ func disconnectClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
 	clientHandler.OnClientDisconnect(id)
 	conn.Close()
+	
+	fmt.Println(id, "Disconnected")
 }
