@@ -11,30 +11,17 @@ import (
 
 type MyClientHandler struct{}
 
-func (ch MyClientHandler) OnClientConnect(id uint32) {
+func (ch MyClientHandler) OnClientConnect(si *hurlean.ServerInstance, id uint32) {
 	
-	fmt.Println("A new client (id", id, ") has been connected to the server")
+	fmt.Println("A new client (id", id, ") has been connected to the server", si)
 }
 
-func (ch MyClientHandler) OnClientDisconnect(id uint32) {
+func (ch MyClientHandler) OnClientDisconnect(si *hurlean.ServerInstance, id uint32) {
 	
-	fmt.Println("Client (id", id, ") has disconnected from the server")
+	fmt.Println("Client (id", id, ") has disconnected from the server", si)
 }
 
-
-type MyServerUpdater struct{}
-
-func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance) {
-	
-	var input string
-	fmt.Scanln(&input)
-	switch (input) {
-	case "exit":
-		serverInstance.Running = false
-	}
-}
-
-func (ch MyClientHandler) OnClientMessage(id uint32, message hurlean.Message) (hurlean.Message, bool) {
+func (ch MyClientHandler) OnClientMessage(si *hurlean.ServerInstance, id uint32, message hurlean.Message) {
 	
 	fmt.Println("")
 	fmt.Println("----------------")
@@ -50,7 +37,20 @@ func (ch MyClientHandler) OnClientMessage(id uint32, message hurlean.Message) (h
 		Body: "echo from server",
 	}
 	
-	return responseMessage, true
+	si.Send(id, responseMessage)
+}
+
+
+type MyServerUpdater struct{}
+
+func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance) {
+	
+	var input string
+	fmt.Scanln(&input)
+	switch (input) {
+	case "exit":
+		hurlean.Stop(serverInstance)
+	}
 }
 
 

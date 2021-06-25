@@ -15,6 +15,19 @@ import (
 type ServerInstance struct {
 	IDCounter uint32
 	Running bool
+	Clients map[uint32]net.Conn
+}
+
+func (si ServerInstance) Send(id uint32, message Message) {
+	
+	if conn, ok := si.Clients[id]; ok {
+		encoder := gob.NewEncoder(conn)
+		if err := encoder.Encode(message); err != nil {
+			fmt.Printf(
+				"Server Error (message encoding ): encoding message = [%v] for sending to client with id = [%v], error = p%v[",
+				message, id, err)
+		}
+	}
 }
 
 type Message struct {
@@ -25,9 +38,9 @@ type Message struct {
 
 type ClientHandler interface {
 	
-	OnClientConnect(id uint32)
-	OnClientDisconnect(id uint32)
-	OnClientMessage(id uint32, message Message) (Message, bool)	// returns (responseMessage, sendResponse)
+	OnClientConnect(si *ServerInstance, id uint32)
+	OnClientDisconnect(si *ServerInstance, id uint32)
+	OnClientMessage(si *ServerInstance, id uint32, message Message)
 }
 
 type ServerUpdater interface {
@@ -47,6 +60,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 	serverInstance := ServerInstance{
 		IDCounter: 0,
 		Running: true,
+		Clients: make(map[uint32]net.Conn),
 	}
 	
 	var serverUpdateWaitGroup = sync.WaitGroup{}
@@ -75,10 +89,10 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 			newId := serverInstance.IDCounter
 			serverInstance.IDCounter += 1
 			
-			clientHandler.OnClientConnect(newId)
-			
 			clientConnectionsWaitGroup.Add(1)
 			go handleClient(&serverInstance, &clientConnectionsWaitGroup, newId, conn, clientHandler)
+			
+			clientHandler.OnClientConnect(&serverInstance, newId)
 		}
 	}
 	
@@ -91,12 +105,19 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 	return nil
 }
 
+func Stop(serverInstance *ServerInstance) {
+	
+	serverInstance.Running = false
+}
+
 func handleClient(
 	serverInstance *ServerInstance,
 	clientConnectionsWaitGroup *sync.WaitGroup,
 	id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
-	defer disconnectClient(id, conn, clientHandler)
+	defer disconnectClient(serverInstance, id, conn, clientHandler)
+	
+	serverInstance.Clients[id] = conn
 	
 	messageChannel := make(chan Message)
 	doneChannel := make(chan struct{})
@@ -105,7 +126,7 @@ func handleClient(
 	
 	wg.Add(2)
 	go listenToMessages(serverInstance, messageChannel, doneChannel, &wg, conn)
-	go handleMessage(messageChannel, doneChannel, &wg, id, conn, clientHandler)
+	go handleMessage(serverInstance, messageChannel, doneChannel, &wg, id, conn, clientHandler)
 	
 	wg.Wait()
 	
@@ -121,12 +142,15 @@ func listenToMessages(
 	wg *sync.WaitGroup,
 	conn net.Conn) {
 	
+	// set a read deadline to force the loop to update (for now it's each 100 ms),
+	// because otherwise the Decode function blocks (because conn.Read is a blocking operation)
+	// and if the server has been stopped, this function won't know about it and the go routine won't be
+	// closed properly
 	conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
 	
 	decoder := gob.NewDecoder(conn)
 	
 	for serverInstance.Running {
-		fmt.Println("Sender update")
 		var message Message
 		if err := decoder.Decode(&message); err != nil {
 			if err.(net.Error).Timeout() {
@@ -149,21 +173,16 @@ func listenToMessages(
 
 // receiver
 func handleMessage(
+	serverInstance *ServerInstance,
 	messageChannel <-chan Message, doneChannel <-chan struct{},
 	wg *sync.WaitGroup,
 	id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
 	loop:
 	for {
-		fmt.Println("Sender update")
 		select {
 			case message := <- messageChannel:
-				if responseMessage, sendResponse := clientHandler.OnClientMessage(id, message); sendResponse {
-					encoder := gob.NewEncoder(conn)
-					if err := encoder.Encode(responseMessage); err != nil {
-						fmt.Println("Server Error (message encoding): ", err)
-					}
-				}
+				clientHandler.OnClientMessage(serverInstance, id, message)
 			
 			case <- doneChannel:
 				break loop
@@ -175,8 +194,8 @@ func handleMessage(
 	wg.Done()
 }
 
-func disconnectClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
+func disconnectClient(serverInstance *ServerInstance, id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
-	clientHandler.OnClientDisconnect(id)
+	clientHandler.OnClientDisconnect(serverInstance, id)
 	conn.Close()
 }
