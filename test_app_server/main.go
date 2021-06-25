@@ -21,6 +21,19 @@ func (ch MyClientHandler) OnClientDisconnect(id uint32) {
 	fmt.Println("Client (id", id, ") has disconnected from the server")
 }
 
+
+type MyServerUpdater struct{}
+
+func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance) {
+	
+	var input string
+	fmt.Scanln(&input)
+	switch (input) {
+	case "exit":
+		serverInstance.Running = false
+	}
+}
+
 func (ch MyClientHandler) OnClientMessage(id uint32, message hurlean.Message) (hurlean.Message, bool) {
 	
 	fmt.Println("")
@@ -44,8 +57,9 @@ func (ch MyClientHandler) OnClientMessage(id uint32, message hurlean.Message) (h
 func main() {
 	
 	var myClientHandler hurlean.ClientHandler = MyClientHandler{}
+	var MyServerUpdater hurlean.ServerUpdater = MyServerUpdater{}
 	
-	if err := hurlean.StartServer(8080, myClientHandler); err != nil {
+	if err := hurlean.StartServer(8080, myClientHandler, MyServerUpdater); err != nil {
 		fmt.Println(err)
 	}
 }

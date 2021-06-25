@@ -11,6 +11,11 @@ import (
 )
 
 
+type ServerInstance struct {
+	IDCounter uint32
+	Running bool
+}
+
 type Message struct {
 	Type string
 	Size uint32
@@ -24,8 +29,13 @@ type ClientHandler interface {
 	OnClientMessage(id uint32, message Message) (Message, bool)	// returns (responseMessage, sendResponse)
 }
 
+type ServerUpdater interface {
+	
+	OnServerUpdate(serverInstance *ServerInstance)
+}
 
-func StartServer(port int, clientHandler ClientHandler) error {
+
+func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpdater) error {
 	
 	ln, err := net.Listen("tcp", ":" + strconv.Itoa(port))
 	if err != nil {
@@ -33,26 +43,57 @@ func StartServer(port int, clientHandler ClientHandler) error {
 	}
 	defer ln.Close()
 	
-	var idCounter uint32 = 0
+	serverInstance := ServerInstance{
+		IDCounter: 0,
+		Running: true,
+	}
 	
-	for {
+	var serverUpdateWaitGroup = sync.WaitGroup{}
+	serverUpdateWaitGroup.Add(1)
+	
+	go func(serverInstance *ServerInstance, serverUpdateWaitGroup *sync.WaitGroup) {
+		
+		for serverInstance.Running {
+			serverUpdater.OnServerUpdate(serverInstance)
+		}
+		
+		fmt.Println("ServerUpdate has stopped")
+		
+		ln.Close()
+		
+		serverUpdateWaitGroup.Done()
+	}(&serverInstance, &serverUpdateWaitGroup)
+	
+	var clientConnectionsWaitGroup = sync.WaitGroup{}
+	
+	for serverInstance.Running {
 		conn, err := ln.Accept()
 		if err != nil {
 			return errors.New("Failed to accept a client: " + err.Error())
 		}
 		
-		newId := idCounter
-		idCounter += 1
+		newId := serverInstance.IDCounter
+		serverInstance.IDCounter += 1
 		
 		clientHandler.OnClientConnect(newId)
 		
-		go handleClient(newId, conn, clientHandler)
+		clientConnectionsWaitGroup.Add(1)
+		go handleClient(&serverInstance, &clientConnectionsWaitGroup, newId, conn, clientHandler)
 	}
+	
+	fmt.Println("ServerListen has stopped")
+	
+	clientConnectionsWaitGroup.Wait()
+	
+	serverUpdateWaitGroup.Wait()
 	
 	return nil
 }
 
-func handleClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
+func handleClient(
+	serverInstance *ServerInstance,
+	clientConnectionsWaitGroup *sync.WaitGroup,
+	id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
 	defer disconnectClient(id, conn, clientHandler)
 	
@@ -62,16 +103,22 @@ func handleClient(id uint32, conn net.Conn, clientHandler ClientHandler) {
 	var wg = sync.WaitGroup{}
 	
 	wg.Add(2)
-	go listenToMessages(messageChannel, doneChannel, &wg, conn)
-	go handleMessage(messageChannel, doneChannel, &wg, id, conn, clientHandler)
+	go listenToMessages(serverInstance, messageChannel, doneChannel, &wg, conn)
+	go handleMessage(serverInstance, messageChannel, doneChannel, &wg, id, conn, clientHandler)
 	
 	wg.Wait()
+	
+	clientConnectionsWaitGroup.Done()
 }
 
 // sender
-func listenToMessages(messageChannel chan<- Message, doneChannel chan<- struct{}, wg *sync.WaitGroup, conn net.Conn) {
+func listenToMessages(
+	serverInstance *ServerInstance,
+	messageChannel chan<- Message, doneChannel chan<- struct{},
+	wg *sync.WaitGroup,
+	conn net.Conn) {
 	
-	for {
+	for serverInstance.Running {
 		var message Message
 		decoder := gob.NewDecoder(conn)
 		if err := decoder.Decode(&message); err != nil {
@@ -88,14 +135,17 @@ func listenToMessages(messageChannel chan<- Message, doneChannel chan<- struct{}
 }
 
 // receiver
-func handleMessage(messageChannel <-chan Message, doneChannel <-chan struct{}, wg *sync.WaitGroup, id uint32, conn net.Conn, clientHandler ClientHandler) {
+func handleMessage(
+	serverInstance *ServerInstance,
+	messageChannel <-chan Message, doneChannel <-chan struct{},
+	wg *sync.WaitGroup,
+	id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
 	loop:
-	for {
+	for serverInstance.Running {
 		select {
 			case message := <- messageChannel:
 				if responseMessage, sendResponse := clientHandler.OnClientMessage(id, message); sendResponse {
-					// TODO : check for errors in Write
 					encoder := gob.NewEncoder(conn)
 					if err := encoder.Encode(responseMessage); err != nil {
 						fmt.Println("Server Error (message encoding): ", err)
