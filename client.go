@@ -9,6 +9,8 @@ import (
 	"encoding/gob"
 	"sync"
 	"time"
+	"reflect"
+	"io"
 )
 
 
@@ -84,12 +86,20 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 	
 	decoder := gob.NewDecoder(clientInstance.Conn)
 	
+	// used to chekc if err in decoder.Decode is of type net.Error, because err may be EOF,
+	// which is not of type net.Error, so the program panics, the additional checking prevents that
+	netErrorType := reflect.TypeOf((*net.Error)(nil)).Elem()
+	
 	for clientInstance.Connected {
 		// TODO : move message var outside for
 		var message Message
 		if err := decoder.Decode(&message); err != nil {
-			if err.(net.Error).Timeout() {
+			if reflect.TypeOf(err).Implements(netErrorType) && err.(net.Error).Timeout() {
+				clientInstance.Conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
 				continue
+			} else if err == io.EOF {
+				fmt.Printf("Client: connection %v has been closed\n", err)
+				break
 			} else {
 				fmt.Println("Client Error (message decoding): ", err)
 				break
@@ -98,6 +108,8 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 			messageHandler.OnServerMessage(message)
 		}
 	}
+	
+	clientInstance.Connected = false
 	
 	// DEBUG MESSAGE
 	fmt.Println("ClientRead has stopped")
