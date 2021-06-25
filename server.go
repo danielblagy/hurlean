@@ -32,7 +32,6 @@ func (si ServerInstance) Send(id uint32, message Message) {
 
 type Message struct {
 	Type string
-	Size uint32
 	Body string
 }
 
@@ -72,6 +71,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 			serverUpdater.OnServerUpdate(serverInstance)
 		}
 		
+		// DEBUG MESSAGE
 		fmt.Println("ServerUpdate has stopped")
 		
 		ln.Close()
@@ -96,6 +96,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 		}
 	}
 	
+	// DEBUG MESSAGE
 	fmt.Println("ServerListen has stopped")
 	
 	clientConnectionsWaitGroup.Wait()
@@ -130,6 +131,7 @@ func handleClient(
 	
 	disconnectClient(serverInstance, id, conn, clientHandler)
 	
+	// DEBUG MESSAGE
 	fmt.Println("HandleClient has stopped")
 	
 	clientConnectionsWaitGroup.Done()
@@ -166,6 +168,7 @@ func listenToMessages(
 	
 	close(doneChannel)
 	
+	// DEBUG MESSAGE
 	fmt.Println("Sender has stopped")
 	
 	wg.Done()
@@ -189,6 +192,7 @@ func handleMessage(
 		}
 	}
 	
+	// DEBUG MESSAGE
 	fmt.Println("Receiver has stopped")
 	
 	wg.Done()

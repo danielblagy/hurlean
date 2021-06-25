@@ -28,7 +28,6 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler) e
 	
 	helloMessage := Message{
 		Type: "hello",
-		Size: 0,
 		Body: "hello server",
 	}
 	encoder := gob.NewEncoder(conn)

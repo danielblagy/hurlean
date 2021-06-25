@@ -27,13 +27,11 @@ func (ch MyClientHandler) OnClientMessage(si *hurlean.ServerInstance, id uint32,
 	fmt.Println("----------------")
 	fmt.Println("Message from", id, ":")
 	fmt.Println("  Type:", message.Type)
-	fmt.Println("  Size:", message.Size)
 	fmt.Println("  Body:", message.Body)
 	fmt.Println("----------------")
 	
 	responseMessage := hurlean.Message{
 		Type: "echo",
-		Size: 0,
 		Body: "echo from server",
 	}
 	
