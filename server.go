@@ -30,6 +30,11 @@ func (si ServerInstance) Send(id uint32, message Message) {
 	}
 }
 
+func (si *ServerInstance) Stop() {
+	
+	si.Running = false
+}
+
 type Message struct {
 	Type string
 	Body string
@@ -104,11 +109,6 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 	serverUpdateWaitGroup.Wait()
 	
 	return nil
-}
-
-func Stop(serverInstance *ServerInstance) {
-	
-	serverInstance.Running = false
 }
 
 func handleClient(

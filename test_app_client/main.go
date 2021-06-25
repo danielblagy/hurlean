@@ -30,7 +30,7 @@ func (cu MyClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInstance)
 	fmt.Scanln(&input)
 	switch (input) {
 	case "/disconnect":
-		hurlean.Disconnect(clientInstance)
+		clientInstance.Disconnect()
 	default:
 		message := hurlean.Message{
 			Type: "chat message",

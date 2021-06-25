@@ -47,7 +47,7 @@ func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance)
 	fmt.Scanln(&input)
 	switch (input) {
 	case "exit":
-		hurlean.Stop(serverInstance)
+		serverInstance.Stop()
 	}
 }
 

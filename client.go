@@ -27,6 +27,12 @@ func (ci ClientInstance) Send(message Message) {
 	}
 }
 
+func (ci *ClientInstance) Disconnect() {
+	
+	ci.Connected = false
+	ci.Conn.Close()
+}
+
 type ServerMessageHandler interface {
 	
 	OnServerMessage(message Message)
@@ -99,10 +105,4 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 	clientUpdateWaitGroup.Wait()
 	
 	return nil
-}
-
-func Disconnect(clientInstance *ClientInstance) {
-	
-	clientInstance.Connected = false
-	clientInstance.Conn.Close()
 }
