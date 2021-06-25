@@ -152,8 +152,6 @@ func listenToMessages(
 	// closed properly
 	conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
 	
-	//decoder := gob.NewDecoder(conn)
-	
 	// used to chekc if err in decoder.Decode is of type net.Error, because err may be EOF,
 	// which is not of type net.Error, so the program panics, the additional checking prevents that
 	netErrorType := reflect.TypeOf((*net.Error)(nil)).Elem()

@@ -84,8 +84,6 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 	
 	clientInstance.Conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
 	
-	//decoder := gob.NewDecoder(clientInstance.Conn)
-	
 	// used to chekc if err in decoder.Decode is of type net.Error, because err may be EOF,
 	// which is not of type net.Error, so the program panics, the additional checking prevents that
 	netErrorType := reflect.TypeOf((*net.Error)(nil)).Elem()
