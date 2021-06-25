@@ -115,8 +115,6 @@ func handleClient(
 	clientConnectionsWaitGroup *sync.WaitGroup,
 	id uint32, conn net.Conn, clientHandler ClientHandler) {
 	
-	defer disconnectClient(serverInstance, id, conn, clientHandler)
-	
 	serverInstance.Clients[id] = conn
 	
 	messageChannel := make(chan Message)
@@ -129,6 +127,8 @@ func handleClient(
 	go handleMessage(serverInstance, messageChannel, doneChannel, &wg, id, conn, clientHandler)
 	
 	wg.Wait()
+	
+	disconnectClient(serverInstance, id, conn, clientHandler)
 	
 	fmt.Println("HandleClient has stopped")
 	
