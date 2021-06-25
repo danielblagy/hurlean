@@ -76,15 +76,15 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 		clientUpdateWaitGroup.Done()
 	}(&clientInstance, &clientUpdateWaitGroup)
 	
-	helloMessage := Message{
+	/*helloMessage := Message{
 		Type: "hello",
 		Body: "hello server",
 	}
-	clientInstance.Send(helloMessage)
+	clientInstance.Send(helloMessage)*/
 	
 	clientInstance.Conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
 	
-	decoder := gob.NewDecoder(clientInstance.Conn)
+	//decoder := gob.NewDecoder(clientInstance.Conn)
 	
 	// used to chekc if err in decoder.Decode is of type net.Error, because err may be EOF,
 	// which is not of type net.Error, so the program panics, the additional checking prevents that
@@ -93,6 +93,7 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 	for clientInstance.Connected {
 		// TODO : move message var outside for
 		var message Message
+		decoder := gob.NewDecoder(clientInstance.Conn)
 		if err := decoder.Decode(&message); err != nil {
 			if reflect.TypeOf(err).Implements(netErrorType) && err.(net.Error).Timeout() {
 				clientInstance.Conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
