@@ -9,6 +9,8 @@ import (
 	"sync"
 	"encoding/gob"
 	"time"
+	"reflect"
+	"io"
 )
 
 
@@ -24,7 +26,7 @@ func (si ServerInstance) Send(id uint32, message Message) {
 		encoder := gob.NewEncoder(conn)
 		if err := encoder.Encode(message); err != nil {
 			fmt.Printf(
-				"Server Error (message encoding ): encoding message = [%v] for sending to client with id = [%v], error = [%v]",
+				"Server Error (message encoding ): encoding message = [%v] for sending to client with id = [%v], error = [%v]\n",
 				message, id, err)
 		}
 	}
@@ -152,12 +154,20 @@ func listenToMessages(
 	
 	decoder := gob.NewDecoder(conn)
 	
+	// used to chekc if err in decoder.Decode is of type net.Error, because err may be EOF,
+	// which is not of type net.Error, so the program panics, the additional checking prevents that
+	netErrorType := reflect.TypeOf((*net.Error)(nil)).Elem()
+	
 	for serverInstance.Running {
 		// TODO : move message var outside for
 		var message Message
 		if err := decoder.Decode(&message); err != nil {
-			if err.(net.Error).Timeout() {
+			if reflect.TypeOf(err).Implements(netErrorType) && err.(net.Error).Timeout() {
+				conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
 				continue
+			} else if err == io.EOF {
+				fmt.Printf("Server: connection %v has been closed\n", conn)
+				break
 			} else {
 				fmt.Println("Server Error (message decoding): ", err)
 				break

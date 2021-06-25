@@ -22,7 +22,7 @@ func (ci ClientInstance) Send(message Message) {
 	encoder := gob.NewEncoder(ci.Conn)
 	if err := encoder.Encode(message); err != nil {
 		fmt.Printf(
-			"Client Error (message encoding): encoding message = [%v] for sending to the server, error = [%v]",
+			"Client Error (message encoding): encoding message = [%v] for sending to the server, error = [%v]\n",
 			message, err)
 	}
 }
