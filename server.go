@@ -24,7 +24,7 @@ func (si ServerInstance) Send(id uint32, message Message) {
 		encoder := gob.NewEncoder(conn)
 		if err := encoder.Encode(message); err != nil {
 			fmt.Printf(
-				"Server Error (message encoding ): encoding message = [%v] for sending to client with id = [%v], error = p%v[",
+				"Server Error (message encoding ): encoding message = [%v] for sending to client with id = [%v], error = [%v]",
 				message, id, err)
 		}
 	}

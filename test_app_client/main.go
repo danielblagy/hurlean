@@ -22,6 +22,14 @@ func (mh MyServerMessageHandler) OnServerMessage(message hurlean.Message) {
 }
 
 
+type MyClientUpdater struct{}
+
+func (cu MyClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
+	
+	
+}
+
+
 func main() {
 	
 	var mh hurlean.ServerMessageHandler = MyServerMessageHandler{}

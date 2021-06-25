@@ -10,9 +10,28 @@ import (
 )
 
 
+type ClientInstance struct {
+	Conn net.Conn
+}
+
+func (ci ClientInstance) Send(message Message) {
+	
+	encoder := gob.NewEncoder(ci.Conn)
+	if err := encoder.Encode(message); err != nil {
+		fmt.Printf(
+			"Client Error (message encoding): encoding message = [%v] for sending to the server, error = [%v]",
+			message, err)
+	}
+}
+
 type ServerMessageHandler interface {
 	
 	OnServerMessage(message Message)
+}
+
+type ClientUpdater interface {
+	
+	OnClientUpdate(clientInstance *ClientInstance)
 }
 
 
@@ -26,14 +45,15 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler) e
 	
 	fmt.Println("Successfully connected to the server")
 	
+	clientInstance := ClientInstance{
+		Conn: conn,
+	}
+	
 	helloMessage := Message{
 		Type: "hello",
 		Body: "hello server",
 	}
-	encoder := gob.NewEncoder(conn)
-	if err := encoder.Encode(helloMessage); err != nil {
-		fmt.Println("Client Error (message encoding): ", err)
-	}
+	clientInstance.Send(helloMessage)
 	
 	for {
 		var message Message
