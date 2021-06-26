@@ -32,6 +32,18 @@ func (si ServerInstance) Send(id uint32, message Message) {
 	}
 }
 
+func (si ServerInstance) SendAll(message Message) {
+	
+	for id, conn := range si.Clients {
+		encoder := gob.NewEncoder(conn)
+		if err := encoder.Encode(message); err != nil {
+			fmt.Printf(
+				"Server Error (message encoding ): encoding message = [%v] for sending to client with id = [%v], error = [%v]\n",
+				message, id, err)
+		}
+	}
+}
+
 func (si *ServerInstance) Stop() {
 	
 	si.Running = false
@@ -166,6 +178,15 @@ func listenToMessages(
 				continue
 			} else if err == io.EOF {
 				fmt.Printf("Server: connection %v has been closed\n", conn)
+				
+				// remove the connection from the map
+				for k, v := range serverInstance.Clients {
+					if v == conn {
+						delete(serverInstance.Clients, k)
+						break
+					}
+				}
+				
 				break
 			} else {
 				fmt.Println("Server Error (message decoding): ", err)

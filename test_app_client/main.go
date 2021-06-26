@@ -13,12 +13,8 @@ type MyServerMessageHandler struct{}
 
 func (mh MyServerMessageHandler) OnServerMessage(message hurlean.Message) {
 	
-	fmt.Println("")
-	fmt.Println("----------------")
-	fmt.Println("Message from the server")
-	fmt.Println("  Type:", message.Type)
-	fmt.Println("  Body:", message.Body)
-	fmt.Println("----------------")
+	fmt.Printf("Type: %v\n", message.Type)
+	fmt.Printf("Body: %v\n\n", message.Body)
 }
 
 

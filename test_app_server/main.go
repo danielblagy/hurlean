@@ -30,12 +30,14 @@ func (ch MyClientHandler) OnClientMessage(si *hurlean.ServerInstance, id uint32,
 	fmt.Println("  Body:", message.Body)
 	fmt.Println("----------------")
 	
-	responseMessage := hurlean.Message{
-		Type: "echo",
-		Body: "echo from server",
+	if message.Type == "chat message" {
+		responseMessage := hurlean.Message{
+			Type: "chat message",
+			Body: message.Body,
+		}
+		
+		si.SendAll(responseMessage)
 	}
-	
-	si.Send(id, responseMessage)
 }
 
 
