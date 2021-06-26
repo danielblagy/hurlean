@@ -17,6 +17,7 @@ import (
 type ClientInstance struct {
 	Connected bool
 	Conn net.Conn
+	State interface{}
 }
 
 func (ci ClientInstance) Send(message Message) {
@@ -46,7 +47,7 @@ type ClientUpdater interface {
 }
 
 
-func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, clientUpdater ClientUpdater) error {
+func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, clientUpdater ClientUpdater, clientState interface{}) error {
 	
 	conn, err := net.Dial("tcp", ip + ":" + strconv.Itoa(port))
 	if err != nil {
@@ -59,6 +60,7 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 	clientInstance := ClientInstance{
 		Connected: true,
 		Conn: conn,
+		State: clientState,
 	}
 	
 	var clientUpdateWaitGroup = sync.WaitGroup{}
