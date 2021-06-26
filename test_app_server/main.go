@@ -6,6 +6,7 @@ package main
 import (
 	"github.com/danielblagy/hurlean"
 	"fmt"
+	"strconv"
 )
 
 
@@ -33,7 +34,7 @@ func (ch MyClientHandler) OnClientMessage(si *hurlean.ServerInstance, id uint32,
 	if message.Type == "chat message" {
 		responseMessage := hurlean.Message{
 			Type: "chat message",
-			Body: message.Body,
+			Body: strconv.FormatUint(uint64(id), 10) + ": " + message.Body,
 		}
 		
 		si.SendAll(responseMessage)

@@ -13,8 +13,9 @@ type MyServerMessageHandler struct{}
 
 func (mh MyServerMessageHandler) OnServerMessage(message hurlean.Message) {
 	
-	fmt.Printf("Type: %v\n", message.Type)
-	fmt.Printf("Body: %v\n\n", message.Body)
+	if message.Type == "chat message" {
+		fmt.Printf("%v\n\n", message.Body)
+	}
 }
 
 

@@ -18,9 +18,12 @@ type ServerInstance struct {
 	IDCounter uint32
 	Running bool
 	Clients map[uint32]net.Conn
+	clientsMutex sync.RWMutex
 }
 
 func (si ServerInstance) Send(id uint32, message Message) {
+	
+	si.clientsMutex.Lock()
 	
 	if conn, ok := si.Clients[id]; ok {
 		encoder := gob.NewEncoder(conn)
@@ -30,9 +33,13 @@ func (si ServerInstance) Send(id uint32, message Message) {
 				message, id, err)
 		}
 	}
+	
+	si.clientsMutex.Unlock()
 }
 
 func (si ServerInstance) SendAll(message Message) {
+	
+	si.clientsMutex.Lock()
 	
 	for id, conn := range si.Clients {
 		encoder := gob.NewEncoder(conn)
@@ -42,6 +49,8 @@ func (si ServerInstance) SendAll(message Message) {
 				message, id, err)
 		}
 	}
+	
+	si.clientsMutex.Unlock()
 }
 
 func (si *ServerInstance) Stop() {
@@ -79,6 +88,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 		IDCounter: 0,
 		Running: true,
 		Clients: make(map[uint32]net.Conn),
+		clientsMutex: sync.RWMutex{},
 	}
 	
 	var serverUpdateWaitGroup = sync.WaitGroup{}
@@ -179,6 +189,7 @@ func listenToMessages(
 			} else if err == io.EOF {
 				fmt.Printf("Server: connection %v has been closed\n", conn)
 				
+				serverInstance.clientsMutex.Lock()
 				// remove the connection from the map
 				for k, v := range serverInstance.Clients {
 					if v == conn {
@@ -186,6 +197,7 @@ func listenToMessages(
 						break
 					}
 				}
+				serverInstance.clientsMutex.Unlock()
 				
 				break
 			} else {
