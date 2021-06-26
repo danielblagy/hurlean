@@ -7,7 +7,8 @@ import (
 	"github.com/danielblagy/hurlean"
 	"fmt"
 	"strconv"
-	//"bufio"
+	"bufio"
+	"os"
 )
 
 
@@ -16,7 +17,6 @@ type MyClientHandler struct{}
 func (ch MyClientHandler) OnClientConnect(si *hurlean.ServerInstance, id uint32) {
 	
 	fmt.Println("A new client (id", id, ") has been connected to the server", si)
-	fmt.Println(si.State.(MyServerState).i)
 }
 
 func (ch MyClientHandler) OnClientDisconnect(si *hurlean.ServerInstance, id uint32) {
@@ -48,17 +48,19 @@ type MyServerUpdater struct{}
 
 func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance) {
 	
-	var input string
-	fmt.Scanln(&input)
-	switch (input) {
-	case "exit":
-		serverInstance.Stop()
+	scanner := serverInstance.State.(MyServerState).scanner
+	
+	if scanner.Scan() {
+		switch (scanner.Text()) {
+		case "exit":
+			serverInstance.Stop()
+		}
 	}
 }
 
 
 type MyServerState struct{
-	i int
+	scanner *bufio.Scanner
 }
 
 
@@ -67,7 +69,12 @@ func main() {
 	var myClientHandler hurlean.ClientHandler = MyClientHandler{}
 	var myServerUpdater hurlean.ServerUpdater = MyServerUpdater{}
 	
-	if err := hurlean.StartServer(8080, myClientHandler, myServerUpdater, MyServerState{15}); err != nil {
+	// set the app-specific server's state
+	var myServerState MyServerState = MyServerState{
+		scanner: bufio.NewScanner(os.Stdin),
+	}
+	
+	if err := hurlean.StartServer(8080, myClientHandler, myServerUpdater, myServerState); err != nil {
 		fmt.Println(err)
 	}
 }
