@@ -7,6 +7,7 @@ import (
 	"github.com/danielblagy/hurlean"
 	"fmt"
 	"strconv"
+	//"bufio"
 )
 
 
@@ -15,6 +16,7 @@ type MyClientHandler struct{}
 func (ch MyClientHandler) OnClientConnect(si *hurlean.ServerInstance, id uint32) {
 	
 	fmt.Println("A new client (id", id, ") has been connected to the server", si)
+	fmt.Println(si.State.(MyServerState).i)
 }
 
 func (ch MyClientHandler) OnClientDisconnect(si *hurlean.ServerInstance, id uint32) {
@@ -55,12 +57,17 @@ func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance)
 }
 
 
+type MyServerState struct{
+	i int
+}
+
+
 func main() {
 	
 	var myClientHandler hurlean.ClientHandler = MyClientHandler{}
 	var myServerUpdater hurlean.ServerUpdater = MyServerUpdater{}
 	
-	if err := hurlean.StartServer(8080, myClientHandler, myServerUpdater); err != nil {
+	if err := hurlean.StartServer(8080, myClientHandler, myServerUpdater, MyServerState{15}); err != nil {
 		fmt.Println(err)
 	}
 }

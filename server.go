@@ -19,6 +19,7 @@ type ServerInstance struct {
 	Running bool
 	Clients map[uint32]net.Conn
 	clientsMutex sync.RWMutex
+	State interface{}
 }
 
 func (si ServerInstance) Send(id uint32, message Message) {
@@ -76,7 +77,7 @@ type ServerUpdater interface {
 }
 
 
-func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpdater) error {
+func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpdater, serverState interface{}) error {
 	
 	ln, err := net.Listen("tcp", ":" + strconv.Itoa(port))
 	if err != nil {
@@ -89,6 +90,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 		Running: true,
 		Clients: make(map[uint32]net.Conn),
 		clientsMutex: sync.RWMutex{},
+		State: serverState,
 	}
 	
 	var serverUpdateWaitGroup = sync.WaitGroup{}
