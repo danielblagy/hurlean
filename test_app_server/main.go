@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"bufio"
 	"os"
+	"sync"
 )
 
 
@@ -34,12 +35,28 @@ func (ch MyClientHandler) OnClientMessage(si *hurlean.ServerInstance, id uint32,
 	fmt.Println("----------------")
 	
 	if message.Type == "chat message" {
+		var nickname string
+		if name, ok := si.State.(MyServerState).clientNames[id]; ok {
+			nickname = name
+		} else {
+			nickname = strconv.FormatUint(uint64(id), 10)
+		}
+		
 		responseMessage := hurlean.Message{
 			Type: "chat message",
-			Body: strconv.FormatUint(uint64(id), 10) + ": " + message.Body,
+			Body: nickname + ": " + message.Body,
 		}
 		
 		si.SendAll(responseMessage)
+	} else if message.Type == "setname" {
+		// a pointer method workaround
+		state := si.State.(MyServerState)
+		
+		state.clientNamesMutex.Lock()
+		state.clientNames[id] = message.Body
+		state.clientNamesMutex.Unlock()
+		
+		fmt.Printf("client %v has set name to %v", id, message.Body)
 	}
 }
 
@@ -61,6 +78,8 @@ func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance)
 
 type MyServerState struct{
 	scanner *bufio.Scanner
+	clientNames map[uint32]string
+	clientNamesMutex sync.RWMutex
 }
 
 
@@ -72,6 +91,8 @@ func main() {
 	// set the app-specific server's state
 	var myServerState MyServerState = MyServerState{
 		scanner: bufio.NewScanner(os.Stdin),
+		clientNames: make(map[uint32]string),
+		clientNamesMutex: sync.RWMutex{},
 	}
 	
 	if err := hurlean.StartServer(8080, myClientHandler, myServerUpdater, myServerState); err != nil {

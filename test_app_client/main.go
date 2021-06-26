@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"bufio"
 	"os"
+	"strings"
 )
 
 
@@ -29,10 +30,24 @@ func (cu MyClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInstance)
 	
 	if scanner.Scan() {
 		input := scanner.Text()
-		switch (input) {
-		case "/disconnect":
-			clientInstance.Disconnect()
-		default:
+		
+		if len(input) > 0 && input[0] == '/' {
+			input = strings.TrimPrefix(input, "/")
+			input := strings.Split(input, " ")
+			
+			switch (input[0]) {
+			case "disconnect":
+				clientInstance.Disconnect()
+			case "setname":
+				message := hurlean.Message{
+					Type: "setname",
+					Body: input[1],
+				}
+				clientInstance.Send(message)
+			default:
+				fmt.Printf("Unrecognized command '%v'\n", input[0])
+			}
+		} else {
 			message := hurlean.Message{
 				Type: "chat message",
 				Body: input,
