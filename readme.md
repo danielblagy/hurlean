@@ -8,7 +8,7 @@
 	- [x] server: make debug prints conditional
 	- [x] client: make debug prints conditional
 
-- [ ] code cleanup (formatting, delete commented code)
+- [x] code cleanup (formatting, delete commented code)
 
 - [ ] simple example: time querying
 

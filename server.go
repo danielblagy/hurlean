@@ -59,10 +59,12 @@ func (si *ServerInstance) Stop() {
 	si.Running = false
 }
 
+
 type Message struct {
 	Type string
 	Body string
 }
+
 
 type ClientHandler interface {
 	
@@ -71,6 +73,7 @@ type ClientHandler interface {
 	OnClientMessage(si *ServerInstance, id uint32, message Message)
 }
 
+
 type ServerUpdater interface {
 	
 	OnServerUpdate(serverInstance *ServerInstance)
@@ -78,7 +81,7 @@ type ServerUpdater interface {
 
 
 // controls the debug prints
-var debug bool = false
+var debug bool = true
 
 func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpdater, serverState interface{}) error {
 	
@@ -106,9 +109,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 		}
 		
 		// DEBUG MESSAGE
-		if (debug) {
-			fmt.Println("__hurlean__  ServerUpdate has stopped")
-		}
+		if (debug) { fmt.Println("__hurlean__  ServerUpdate has stopped") }
 		
 		ln.Close()
 		
@@ -135,9 +136,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 	}
 	
 	// DEBUG MESSAGE
-	if (debug) {
-		fmt.Println("__hurlean__  ServerListen has stopped")
-	}
+	if (debug) { fmt.Println("__hurlean__  ServerListen has stopped") }
 	
 	clientConnectionsWaitGroup.Wait()
 	
@@ -167,9 +166,7 @@ func handleClient(
 	disconnectClient(serverInstance, id, conn, clientHandler)
 	
 	// DEBUG MESSAGE
-	if (debug) {
-		fmt.Println("__hurlean__  HandleClient has stopped")
-	}
+	if (debug) { fmt.Println("__hurlean__  HandleClient has stopped") }
 	
 	clientConnectionsWaitGroup.Done()
 }
@@ -191,9 +188,9 @@ func listenToMessages(
 	// which is not of type net.Error, so the program panics, the additional checking prevents that
 	netErrorType := reflect.TypeOf((*net.Error)(nil)).Elem()
 	
+	var message Message
+	
 	for serverInstance.Running {
-		// TODO : move message var outside for
-		var message Message
 		decoder := gob.NewDecoder(conn)
 		if err := decoder.Decode(&message); err != nil {
 			if reflect.TypeOf(err).Implements(netErrorType) && err.(net.Error).Timeout() {
@@ -225,9 +222,7 @@ func listenToMessages(
 	close(doneChannel)
 	
 	// DEBUG MESSAGE
-	if (debug) {
-		fmt.Println("__hurlean__  Sender has stopped")
-	}
+	if (debug) { fmt.Println("__hurlean__  Sender has stopped") }
 	
 	wg.Done()
 }
@@ -251,9 +246,7 @@ func handleMessage(
 	}
 	
 	// DEBUG MESSAGE
-	if (debug) {
-		fmt.Println("__hurlean__  Receiver has stopped")
-	}
+	if (debug) { fmt.Println("__hurlean__  Receiver has stopped") }
 	
 	wg.Done()
 }
