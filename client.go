@@ -14,12 +14,16 @@ import (
 )
 
 
+// When the server connects to the server with hurlean.ConnectToServer function call,
+// ClientInstance object will be created on success.
+// Client Instance is used to control the client's state and send messages to the server
 type ClientInstance struct {
 	Connected bool
 	Conn net.Conn
 	State interface{}
 }
 
+// Sends a message to the server
 func (ci ClientInstance) Send(message Message) {
 	
 	encoder := gob.NewEncoder(ci.Conn)
@@ -30,23 +34,32 @@ func (ci ClientInstance) Send(message Message) {
 	}
 }
 
+// Disconnects from the server
 func (ci *ClientInstance) Disconnect() {
 	
 	ci.Connected = false
 	ci.Conn.Close()
 }
 
+
 type ServerMessageHandler interface {
 	
+	// Is called when the client receives a message from the server,
+	// 'message' is the received message
 	OnServerMessage(message Message)
 }
 
+
 type ClientUpdater interface {
 	
+	// Is called on each client update, used as a 'main' logic function,
+	// e.g. getting an input from the user of the client application
 	OnClientUpdate(clientInstance *ClientInstance)
 }
 
-
+// Attempts to connect to the server on ip:port
+// returns error on failure
+// clientState parameter can be of any type and will be accessible via *hurlean.ClientInstance
 func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, clientUpdater ClientUpdater, clientState interface{}) error {
 	
 	conn, err := net.Dial("tcp", ip + ":" + strconv.Itoa(port))
