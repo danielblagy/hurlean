@@ -14,6 +14,9 @@ import (
 )
 
 
+// When the server is started with hurlean.StartServer function call,
+// ServerInstance object will be created on success.
+// Server Instance is used to control the server's state and send messages to clients
 type ServerInstance struct {
 	IDCounter uint32
 	Running bool
@@ -22,6 +25,7 @@ type ServerInstance struct {
 	State interface{}
 }
 
+// Sends a message to the client with id
 func (si ServerInstance) Send(id uint32, message Message) {
 	
 	si.clientsMutex.Lock()
@@ -38,6 +42,7 @@ func (si ServerInstance) Send(id uint32, message Message) {
 	si.clientsMutex.Unlock()
 }
 
+// Sends a message to all the clients
 func (si ServerInstance) SendAll(message Message) {
 	
 	si.clientsMutex.Lock()
@@ -54,12 +59,14 @@ func (si ServerInstance) SendAll(message Message) {
 	si.clientsMutex.Unlock()
 }
 
+// Stops the server
 func (si *ServerInstance) Stop() {
 	
 	si.Running = false
 }
 
 
+// hurlean.Message objects is data that can be sent and received via network
 type Message struct {
 	Type string
 	Body string
@@ -68,14 +75,25 @@ type Message struct {
 
 type ClientHandler interface {
 	
+	// Is called when a new client connect to the server,
+	// 'id' is the new clients's id
 	OnClientConnect(si *ServerInstance, id uint32)
+	
+	// Is called when a client disconnects from the server,
+	// 'id' is the disconnected clients's id
 	OnClientDisconnect(si *ServerInstance, id uint32)
+	
+	// Is called when the server receives a message from a client,
+	// 'id' is the clients's id
+	// 'message' is the received message
 	OnClientMessage(si *ServerInstance, id uint32, message Message)
 }
 
 
 type ServerUpdater interface {
 	
+	// Is called on each server update, used as a 'main' logic function,
+	// e.g. getting an input from the user of the server application
 	OnServerUpdate(serverInstance *ServerInstance)
 }
 
@@ -83,6 +101,9 @@ type ServerUpdater interface {
 // controls the debug prints
 var debug bool = true
 
+// Starts a server on port
+// returns error on failure
+// serverState parameter can be of any type and will be accessible via *hurlean.ServerInstance
 func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpdater, serverState interface{}) error {
 	
 	ln, err := net.Listen("tcp", ":" + strconv.Itoa(port))

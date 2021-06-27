@@ -10,8 +10,11 @@
 
 - [x] code cleanup (formatting, delete commented code)
 
+- [ ] comment user-accessible structs and functions
+- [ ] a separate file for common global vars, consts, structs
+
 - [ ] simple example: time querying
 
-Bugs:
+## Bugs
 - client connection may close unexpectedly
 - if it is closed like that, on the server side, the client's go routines stop and the connection is not deleted from the Clients map
