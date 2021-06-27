@@ -10,7 +10,7 @@
 
 - [x] code cleanup (formatting, delete commented code)
 
-- [ ] comment user-accessible structs and functions
+- [x] comment user-accessible structs and functions
 - [ ] a separate file for common global vars, consts, structs
 
 - [ ] simple example: time querying

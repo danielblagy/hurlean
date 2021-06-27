@@ -66,13 +66,6 @@ func (si *ServerInstance) Stop() {
 }
 
 
-// hurlean.Message objects is data that can be sent and received via network
-type Message struct {
-	Type string
-	Body string
-}
-
-
 type ClientHandler interface {
 	
 	// Is called when a new client connect to the server,
@@ -97,9 +90,6 @@ type ServerUpdater interface {
 	OnServerUpdate(serverInstance *ServerInstance)
 }
 
-
-// controls the debug prints
-var debug bool = true
 
 // Starts a server on port
 // returns error on failure
