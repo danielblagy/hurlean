@@ -51,11 +51,11 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 	
 	conn, err := net.Dial("tcp", ip + ":" + strconv.Itoa(port))
 	if err != nil {
-		return errors.New("Failed to connect to the server: " + err.Error())
+		return errors.New("__hurlean__  Failed to connect to the server: " + err.Error())
 	}
 	defer conn.Close()
 	
-	fmt.Println("Successfully connected to the server")
+	fmt.Printf("__hurlean__  Successfully connected to the server on %v:%v\n", ip, port)
 	
 	clientInstance := ClientInstance{
 		Connected: true,
@@ -73,7 +73,9 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 		}
 		
 		// DEBUG MESSAGE
-		fmt.Println("ClientUpdate has stopped")
+		if (debug) {
+			fmt.Println("__hurlean__  ClientUpdate has stopped")
+		}
 		
 		clientUpdateWaitGroup.Done()
 	}(&clientInstance, &clientUpdateWaitGroup)
@@ -99,10 +101,10 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 				clientInstance.Conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
 				continue
 			} else if err == io.EOF {
-				fmt.Printf("Client: connection %v has been closed\n", err)
+				fmt.Printf("__hurlean__  Client: connection %v has been closed\n", err)
 				break
 			} else {
-				fmt.Println("Client Error (message decoding): ", err)
+				fmt.Println("__hurlean__  Client Error (message decoding): ", err)
 				break
 			}
 		} else {
@@ -113,7 +115,9 @@ func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, c
 	clientInstance.Connected = false
 	
 	// DEBUG MESSAGE
-	fmt.Println("ClientRead has stopped")
+	if (debug) {
+		fmt.Println("__hurlean__  ClientRead has stopped")
+	}
 	
 	clientUpdateWaitGroup.Wait()
 	

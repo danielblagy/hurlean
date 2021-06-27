@@ -77,11 +77,14 @@ type ServerUpdater interface {
 }
 
 
+// controls the debug prints
+var debug bool = false
+
 func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpdater, serverState interface{}) error {
 	
 	ln, err := net.Listen("tcp", ":" + strconv.Itoa(port))
 	if err != nil {
-		return errors.New("Failed to set up server application: " + err.Error())
+		return errors.New("__hurlean__  Failed to set up server application: " + err.Error())
 	}
 	defer ln.Close()
 	
@@ -103,7 +106,9 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 		}
 		
 		// DEBUG MESSAGE
-		fmt.Println("ServerUpdate has stopped")
+		if (debug) {
+			fmt.Println("__hurlean__  ServerUpdate has stopped")
+		}
 		
 		ln.Close()
 		
@@ -112,10 +117,12 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 	
 	var clientConnectionsWaitGroup = sync.WaitGroup{}
 	
+	fmt.Printf("__hurlean__  The Server has been started on port %v\n", port)
+	
 	for serverInstance.Running {
 		conn, err := ln.Accept()
 		if err != nil {
-			fmt.Println("Failed to accept a client: ", err)
+			fmt.Println("__hurlean__  Failed to accept a client: ", err)
 		} else {
 			newId := serverInstance.IDCounter
 			serverInstance.IDCounter += 1
@@ -128,7 +135,9 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 	}
 	
 	// DEBUG MESSAGE
-	fmt.Println("ServerListen has stopped")
+	if (debug) {
+		fmt.Println("__hurlean__  ServerListen has stopped")
+	}
 	
 	clientConnectionsWaitGroup.Wait()
 	
@@ -158,7 +167,9 @@ func handleClient(
 	disconnectClient(serverInstance, id, conn, clientHandler)
 	
 	// DEBUG MESSAGE
-	fmt.Println("HandleClient has stopped")
+	if (debug) {
+		fmt.Println("__hurlean__  HandleClient has stopped")
+	}
 	
 	clientConnectionsWaitGroup.Done()
 }
@@ -189,7 +200,7 @@ func listenToMessages(
 				conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
 				continue
 			} else if err == io.EOF {
-				fmt.Printf("Server: connection %v has been closed\n", conn)
+				fmt.Printf("__hurlean__  Server: connection %v has been closed\n", conn)
 				
 				serverInstance.clientsMutex.Lock()
 				// remove the connection from the map
@@ -203,7 +214,7 @@ func listenToMessages(
 				
 				break
 			} else {
-				fmt.Println("Server Error (message decoding): ", err)
+				fmt.Println("__hurlean__  Server Error (message decoding): ", err)
 				break
 			}
 		} else {
@@ -214,7 +225,9 @@ func listenToMessages(
 	close(doneChannel)
 	
 	// DEBUG MESSAGE
-	fmt.Println("Sender has stopped")
+	if (debug) {
+		fmt.Println("__hurlean__  Sender has stopped")
+	}
 	
 	wg.Done()
 }
@@ -238,7 +251,9 @@ func handleMessage(
 	}
 	
 	// DEBUG MESSAGE
-	fmt.Println("Receiver has stopped")
+	if (debug) {
+		fmt.Println("__hurlean__  Receiver has stopped")
+	}
 	
 	wg.Done()
 }
