@@ -2,6 +2,12 @@
 
 ## TCP Networking Framework
 
+## installing
+
+```
+$ go get github.com/danielblagy/hurlean
+```
+
 ## import
 
 ```golang
