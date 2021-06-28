@@ -65,6 +65,24 @@ func (si *ServerInstance) Stop() {
 	si.Running = false
 }
 
+// Disconnects the client from the server
+func (si *ServerInstance) Disconnect(id uint32) {
+	
+	if conn, ok := si.Clients[id]; ok {
+		conn.Close()
+		delete(si.Clients, id)
+	}
+}
+
+// Disconnects all clients from the server
+func (si *ServerInstance) DisconnectAll() {
+	
+	for id, conn := range si.Clients {
+		conn.Close()
+		delete(si.Clients, id)
+	}
+}
+
 
 type ClientHandler interface {
 	

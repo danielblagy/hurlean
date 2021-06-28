@@ -71,6 +71,9 @@ func (su MyServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance)
 		switch (scanner.Text()) {
 		case "exit":
 			serverInstance.Stop()
+			
+		case "disconnect":
+			serverInstance.DisconnectAll()
 		}
 	}
 }
