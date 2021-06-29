@@ -25,12 +25,11 @@ import(
 ## How To Use
 
 Let's create a simple server and client apps.
-When the client connects, the server will send the current time,
-then the client will disconnect.
+The client app will be able to query the server for current time.
 
 ### Example Server App
 
-Let's start by creating **the server program**\
+Let's start by creating **the server program**
 
 First we import packages that we'll need
 
@@ -45,8 +44,6 @@ import (
 	"os"
 )
 ```
-
-\
 
 Then we implement `hurlean.ClientHandler` interface.\
 With this interface we define the behavior of our server in the case of any client activity
@@ -111,9 +108,9 @@ func (su ExampleServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInst
 ```
 
 We can define the state of our server program, which will be accessible via `hurlean.ServerInstance` pointer in
-`hurlean.ClientHandler` methods implementations.\
+`hurlean.ClientHandler` methods implementations.
 
-State can be anything from int or string to struct.\
+State can be anything from int or string to struct.
 
 In this simple example we won't need much, only a *bufio.Scanner variable to store the initialized console scanner.
 
@@ -205,7 +202,7 @@ func (cu ExampleClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInst
 ```
 
 Much like with server state, we can define client state as well.\
-It'll be accessible via `hurlean.ClientInstance` pointer in `hurlean.ServerMessageHandler` method implementation.\
+It'll be accessible via `hurlean.ClientInstance` pointer in `hurlean.ServerMessageHandler` method implementation.
 
 ```golang
 // used to store application-specific data in the client instance
