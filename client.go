@@ -19,7 +19,6 @@ import (
 type ClientInstance struct {
 	Connected bool
 	Conn net.Conn
-	State interface{}
 }
 
 // Sends a message to the server
@@ -41,15 +40,13 @@ func (ci *ClientInstance) Disconnect() {
 }
 
 
-type ServerMessageHandler interface {
+type ClientFunctionalityProvider interface {
+	
+	// you can specify client state in your ClientHandler implementation
 	
 	// Is called when the client receives a message from the server,
 	// 'message' is the received message
-	OnServerMessage(message Message)
-}
-
-
-type ClientUpdater interface {
+	OnServerMessage(clientInstance *ClientInstance, message Message)
 	
 	// Is called on each client update, used as a 'main' logic function,
 	// e.g. getting an input from the user of the client application
@@ -58,8 +55,7 @@ type ClientUpdater interface {
 
 // Attempts to connect to the server on ip:port
 // returns error on failure
-// clientState parameter can be of any type and will be accessible via *hurlean.ClientInstance
-func ConnectToServer(ip string, port string, messageHandler ServerMessageHandler, clientUpdater ClientUpdater, clientState interface{}) error {
+func ConnectToServer(ip string, port string, clientHandler ClientFunctionalityProvider) error {
 	
 	conn, err := net.Dial("tcp", ip + ":" + port)
 	if err != nil {
@@ -72,7 +68,6 @@ func ConnectToServer(ip string, port string, messageHandler ServerMessageHandler
 	clientInstance := ClientInstance{
 		Connected: true,
 		Conn: conn,
-		State: clientState,
 	}
 	
 	var clientUpdateWaitGroup = sync.WaitGroup{}
@@ -81,7 +76,7 @@ func ConnectToServer(ip string, port string, messageHandler ServerMessageHandler
 	go func(clientInstance *ClientInstance, clientUpdateWaitGroup *sync.WaitGroup) {
 		
 		for clientInstance.Connected {
-			clientUpdater.OnClientUpdate(clientInstance)
+			clientHandler.OnClientUpdate(clientInstance)
 		}
 		
 		// DEBUG MESSAGE
@@ -112,7 +107,7 @@ func ConnectToServer(ip string, port string, messageHandler ServerMessageHandler
 				break
 			}
 		} else {
-			messageHandler.OnServerMessage(message)
+			clientHandler.OnServerMessage(&clientInstance, message)
 		}
 	}
 	

@@ -12,21 +12,20 @@ import (
 )
 
 
-type MyServerMessageHandler struct{}
+type MyClientFunctionalityProvider struct{
+	scanner *bufio.Scanner
+}
 
-func (mh MyServerMessageHandler) OnServerMessage(message hurlean.Message) {
+func (fp MyClientFunctionalityProvider) OnServerMessage(clientInstance *hurlean.ClientInstance, message hurlean.Message) {
 	
 	if message.Type == "chat message" {
 		fmt.Printf("%v\n\n", message.Body)
 	}
 }
 
-
-type MyClientUpdater struct{}
-
-func (cu MyClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
+func (fp MyClientFunctionalityProvider) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
 	
-	scanner := clientInstance.State.(MyClientState).scanner
+	scanner := fp.scanner
 	
 	if scanner.Scan() {
 		input := scanner.Text()
@@ -58,22 +57,14 @@ func (cu MyClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInstance)
 }
 
 
-type MyClientState struct{
-	scanner *bufio.Scanner
-}
-
-
 func main() {
 	
-	var myServerMessageHandler hurlean.ServerMessageHandler = MyServerMessageHandler{}
-	var myClientUpdater hurlean.ClientUpdater = MyClientUpdater{}
-	
 	// set the app-specific client's state
-	var myClientState MyClientState = MyClientState{
+	var myClientFunctionalityProvider MyClientFunctionalityProvider = MyClientFunctionalityProvider{
 		scanner: bufio.NewScanner(os.Stdin),
 	}
 	
-	if err := hurlean.ConnectToServer("localhost", "8080", myServerMessageHandler, myClientUpdater, myClientState); err != nil {
+	if err := hurlean.ConnectToServer("localhost", "8080", myClientFunctionalityProvider); err != nil {
 		fmt.Println(err)
 	}
 }
