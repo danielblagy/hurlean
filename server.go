@@ -13,6 +13,10 @@ import (
 	"io"
 )
 
+func Hello() {
+	fmt.Println("This is github version test")
+}
+
 
 // When the server is started with hurlean.StartServer function call,
 // ServerInstance object will be created on success.
