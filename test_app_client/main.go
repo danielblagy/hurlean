@@ -73,7 +73,7 @@ func main() {
 		scanner: bufio.NewScanner(os.Stdin),
 	}
 	
-	if err := hurlean.ConnectToServer("localhost", 8080, myServerMessageHandler, myClientUpdater, myClientState); err != nil {
+	if err := hurlean.ConnectToServer("localhost", "8080", myServerMessageHandler, myClientUpdater, myClientState); err != nil {
 		fmt.Println(err)
 	}
 }

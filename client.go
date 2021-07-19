@@ -4,7 +4,6 @@ package hurlean
 import (
 	"net"
 	"errors"
-	"strconv"
 	"fmt"
 	"encoding/gob"
 	"sync"
@@ -60,9 +59,9 @@ type ClientUpdater interface {
 // Attempts to connect to the server on ip:port
 // returns error on failure
 // clientState parameter can be of any type and will be accessible via *hurlean.ClientInstance
-func ConnectToServer(ip string, port int, messageHandler ServerMessageHandler, clientUpdater ClientUpdater, clientState interface{}) error {
+func ConnectToServer(ip string, port string, messageHandler ServerMessageHandler, clientUpdater ClientUpdater, clientState interface{}) error {
 	
-	conn, err := net.Dial("tcp", ip + ":" + strconv.Itoa(port))
+	conn, err := net.Dial("tcp", ip + ":" + port)
 	if err != nil {
 		return errors.New("__hurlean__  Failed to connect to the server: " + err.Error())
 	}
