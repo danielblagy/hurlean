@@ -4,7 +4,6 @@ package hurlean
 import (
 	"net"
 	"errors"
-	"strconv"
 	"fmt"
 	"sync"
 	"encoding/gob"
@@ -84,7 +83,9 @@ func (si *ServerInstance) DisconnectAll() {
 }
 
 
-type ClientHandler interface {
+type ServerFunctionalityProvider interface {
+	
+	// you can specify client state in your ServerFunctionalityProvider implementation
 	
 	// Is called when a new client connect to the server,
 	// 'id' is the new clients's id
@@ -98,10 +99,9 @@ type ClientHandler interface {
 	// 'id' is the clients's id
 	// 'message' is the received message
 	OnClientMessage(si *ServerInstance, id uint32, message Message)
-}
-
-
-type ServerUpdater interface {
+	
+	// Is called once, when the server application starts,
+	OnServerInit(serverInstance *ServerInstance)
 	
 	// Is called on each server update, used as a 'main' logic function,
 	// e.g. getting an input from the user of the server application
@@ -112,9 +112,9 @@ type ServerUpdater interface {
 // Starts a server on port
 // returns error on failure
 // serverState parameter can be of any type and will be accessible via *hurlean.ServerInstance
-func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpdater, serverState interface{}) error {
+func StartServer(port string, serverFunctionalityProvider ServerFunctionalityProvider) error {
 	
-	ln, err := net.Listen("tcp", ":" + strconv.Itoa(port))
+	ln, err := net.Listen("tcp", ":" + port)
 	if err != nil {
 		return errors.New("__hurlean__  Failed to set up server application: " + err.Error())
 	}
@@ -125,8 +125,9 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 		Running: true,
 		Clients: make(map[uint32]net.Conn),
 		clientsMutex: sync.RWMutex{},
-		State: serverState,
 	}
+	
+	serverFunctionalityProvider.OnServerInit(&serverInstance)
 	
 	var serverUpdateWaitGroup = sync.WaitGroup{}
 	serverUpdateWaitGroup.Add(1)
@@ -134,7 +135,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 	go func(serverInstance *ServerInstance, serverUpdateWaitGroup *sync.WaitGroup) {
 		
 		for serverInstance.Running {
-			serverUpdater.OnServerUpdate(serverInstance)
+			serverFunctionalityProvider.OnServerUpdate(serverInstance)
 		}
 		
 		// DEBUG MESSAGE
@@ -158,9 +159,9 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 			serverInstance.IDCounter += 1
 			
 			clientConnectionsWaitGroup.Add(1)
-			go handleClient(&serverInstance, &clientConnectionsWaitGroup, newId, conn, clientHandler)
+			go handleClient(&serverInstance, &clientConnectionsWaitGroup, newId, conn, serverFunctionalityProvider)
 			
-			clientHandler.OnClientConnect(&serverInstance, newId)
+			serverFunctionalityProvider.OnClientConnect(&serverInstance, newId)
 		}
 	}
 	
@@ -177,7 +178,7 @@ func StartServer(port int, clientHandler ClientHandler, serverUpdater ServerUpda
 func handleClient(
 	serverInstance *ServerInstance,
 	clientConnectionsWaitGroup *sync.WaitGroup,
-	id uint32, conn net.Conn, clientHandler ClientHandler) {
+	id uint32, conn net.Conn, serverFunctionalityProvider ServerFunctionalityProvider) {
 	
 	serverInstance.Clients[id] = conn
 	
@@ -188,11 +189,11 @@ func handleClient(
 	
 	wg.Add(2)
 	go listenToMessages(serverInstance, messageChannel, doneChannel, &wg, conn)
-	go handleMessage(serverInstance, messageChannel, doneChannel, &wg, id, conn, clientHandler)
+	go handleMessage(serverInstance, messageChannel, doneChannel, &wg, id, conn, serverFunctionalityProvider)
 	
 	wg.Wait()
 	
-	disconnectClient(serverInstance, id, conn, clientHandler)
+	disconnectClient(serverInstance, id, conn, serverFunctionalityProvider)
 	
 	// DEBUG MESSAGE
 	if (debug) { fmt.Println("__hurlean__  HandleClient has stopped") }
@@ -261,13 +262,13 @@ func handleMessage(
 	serverInstance *ServerInstance,
 	messageChannel <-chan Message, doneChannel <-chan struct{},
 	wg *sync.WaitGroup,
-	id uint32, conn net.Conn, clientHandler ClientHandler) {
+	id uint32, conn net.Conn, serverFunctionalityProvider ServerFunctionalityProvider) {
 	
 	loop:
 	for {
 		select {
 			case message := <- messageChannel:
-				clientHandler.OnClientMessage(serverInstance, id, message)
+				serverFunctionalityProvider.OnClientMessage(serverInstance, id, message)
 			
 			case <- doneChannel:
 				break loop
@@ -280,8 +281,8 @@ func handleMessage(
 	wg.Done()
 }
 
-func disconnectClient(serverInstance *ServerInstance, id uint32, conn net.Conn, clientHandler ClientHandler) {
+func disconnectClient(serverInstance *ServerInstance, id uint32, conn net.Conn, serverFunctionalityProvider ServerFunctionalityProvider) {
 	
-	clientHandler.OnClientDisconnect(serverInstance, id)
+	serverFunctionalityProvider.OnClientDisconnect(serverInstance, id)
 	conn.Close()
 }

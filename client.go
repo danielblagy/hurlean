@@ -42,7 +42,7 @@ func (ci *ClientInstance) Disconnect() {
 
 type ClientFunctionalityProvider interface {
 	
-	// you can specify client state in your ClientHandler implementation
+	// you can specify client state in your ClientFunctionalityProvider implementation
 	
 	// Is called when the client receives a message from the server,
 	// 'message' is the received message
