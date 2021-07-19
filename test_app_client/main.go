@@ -23,6 +23,11 @@ func (fp MyClientFunctionalityProvider) OnServerMessage(clientInstance *hurlean.
 	}
 }
 
+func (fp MyClientFunctionalityProvider) OnClientInit(clientInstance *hurlean.ClientInstance) {
+	
+	fmt.Printf("Welcome to the chat!\n\n")
+}
+
 func (fp MyClientFunctionalityProvider) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
 	
 	scanner := fp.scanner

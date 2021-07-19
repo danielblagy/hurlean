@@ -48,6 +48,9 @@ type ClientFunctionalityProvider interface {
 	// 'message' is the received message
 	OnServerMessage(clientInstance *ClientInstance, message Message)
 	
+	// Is called once, when the client application starts
+	OnClientInit(clientInstance *ClientInstance)
+	
 	// Is called on each client update, used as a 'main' logic function,
 	// e.g. getting an input from the user of the client application
 	OnClientUpdate(clientInstance *ClientInstance)
@@ -55,7 +58,7 @@ type ClientFunctionalityProvider interface {
 
 // Attempts to connect to the server on ip:port
 // returns error on failure
-func ConnectToServer(ip string, port string, clientHandler ClientFunctionalityProvider) error {
+func ConnectToServer(ip string, port string, clientFunctionalityProvider ClientFunctionalityProvider) error {
 	
 	conn, err := net.Dial("tcp", ip + ":" + port)
 	if err != nil {
@@ -70,13 +73,15 @@ func ConnectToServer(ip string, port string, clientHandler ClientFunctionalityPr
 		Conn: conn,
 	}
 	
+	clientFunctionalityProvider.OnClientInit(&clientInstance)
+	
 	var clientUpdateWaitGroup = sync.WaitGroup{}
 	clientUpdateWaitGroup.Add(1)
 	
 	go func(clientInstance *ClientInstance, clientUpdateWaitGroup *sync.WaitGroup) {
 		
 		for clientInstance.Connected {
-			clientHandler.OnClientUpdate(clientInstance)
+			clientFunctionalityProvider.OnClientUpdate(clientInstance)
 		}
 		
 		// DEBUG MESSAGE
@@ -107,7 +112,7 @@ func ConnectToServer(ip string, port string, clientHandler ClientFunctionalityPr
 				break
 			}
 		} else {
-			clientHandler.OnServerMessage(&clientInstance, message)
+			clientFunctionalityProvider.OnServerMessage(&clientInstance, message)
 		}
 	}
 	
