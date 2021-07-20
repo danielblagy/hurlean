@@ -45,26 +45,40 @@ import (
 )
 ```
 
-Then we implement `hurlean.ClientHandler` interface.\
-With this interface we define the behavior of our server in the case of any client activity
+Then we implement `hurlean.ServerFunctionalityProvider` interface.\
+With this interface we define the behavior of our server application.\
+
+First we define the struct of our interface implementation. Here we can put our client application state.\
+In this simple example we won't need much, only a *bufio.Scanner variable to store the initialized console scanner.
+We the scanner we can get console input from the user of our server application. We'll provide two commands: 'exit',
+which will stop the server, and 'disconnect' which will force-disconnect all the currently connected users.
 
 ```golang
 type ExampleClientHandler struct{}
 
+type ExampleServerFunctionalityProvider struct{
+	// here we can store application-specific data
+	scanner *bufio.Scanner
+}
+```
+
+Next we implement functions that define the behavior of our server in the case of any client activity.
+
+```golang
 // executed once for each client
-func (ch ExampleClientHandler) OnClientConnect(si *hurlean.ServerInstance, id uint32) {
+func (fp ExampleServerFunctionalityProvider) OnClientConnect(si *hurlean.ServerInstance, id uint32) {
 	
 	fmt.Printf("Client %v has connected to the server\n", id)
 }
 
 // executed once for each client
-func (ch ExampleClientHandler) OnClientDisconnect(si *hurlean.ServerInstance, id uint32) {
+func (fp ExampleServerFunctionalityProvider) OnClientDisconnect(si *hurlean.ServerInstance, id uint32) {
 	
 	fmt.Printf("Client %v has disconnected from the server\n", id)
 }
 
 // executed each time the server gets a message from a client
-func (ch ExampleClientHandler) OnClientMessage(si *hurlean.ServerInstance, id uint32, message hurlean.Message) {
+func (fp ExampleServerFunctionalityProvider) OnClientMessage(si *hurlean.ServerInstance, id uint32, message hurlean.Message) {
 	
 	fmt.Printf("Message from %v: %v\n", id, message)
 	
@@ -82,21 +96,20 @@ func (ch ExampleClientHandler) OnClientMessage(si *hurlean.ServerInstance, id ui
 }
 ```
 
-We proceed by implementing `hurlean.ServerUpdater` interface.\
-It allows us to specify the logic of our server program, e.g. getting console input which controls the server.
+Now let's implement the functions that define the logic of our server program.
 
 ```golang
-type ExampleServerUpdater struct{}
+// executed once when the server instance is initialized
+func (fp ExampleServerFunctionalityProvider) OnServerInit(serverInstance *hurlean.ServerInstance) {
+	// empty for this simple example
+}
 
 // executed continuously in a loop when the server is running
-func (su ExampleServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance) {
-	
-	// get data from the server state
-	scanner := serverInstance.State.(ExampleServerState).scanner
+func (fp ExampleServerFunctionalityProvider) OnServerUpdate(serverInstance *hurlean.ServerInstance) {
 	
 	// get console input from the server administrator (the app user)
-	if scanner.Scan() {
-		switch (scanner.Text()) {
+	if fp.scanner.Scan() {
+		switch (fp.scanner.Text()) {
 		case "exit":
 			serverInstance.Stop()
 			
@@ -107,20 +120,6 @@ func (su ExampleServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInst
 }
 ```
 
-We can define the state of our server program, which will be accessible via `hurlean.ServerInstance` pointer in
-`hurlean.ClientHandler` methods implementations.
-
-State can be anything from int or string to struct.
-
-In this simple example we won't need much, only a *bufio.Scanner variable to store the initialized console scanner.
-
-```golang
-// used to store application-specific data in the server instance
-type ExampleServerState struct{
-	scanner *bufio.Scanner
-}
-```
-
 Now, to the main function. Here we start the server on port 4545 and provide interfaces implementations and the state.\
 In the case of failure to start the server, error will be returned.
 
@@ -128,11 +127,11 @@ In the case of failure to start the server, error will be returned.
 func main() {
 	
 	// init server state
-	var exampleServerState ExampleServerState = ExampleServerState{
+	exampleServerFunctionalityProvider := ExampleServerFunctionalityProvider{
 		scanner: bufio.NewScanner(os.Stdin),
 	}
 	
-	if err := hurlean.StartServer(4545, ExampleClientHandler{}, ExampleServerUpdater{}, exampleServerState); err != nil {
+	if err := hurlean.StartServer("4545", exampleServerFunctionalityProvider); err != nil {
 		fmt.Println(err)
 	}
 }
@@ -155,14 +154,22 @@ import (
 )
 ```
 
-Then we need to implement `hurlean.ServerMessageHandler` interface.\
+Then we need to implement `hurlean.ClientFunctionalityProvider` interface.\
+Much like with server state, we're going to define client state as well.
+
+```golang
+type ExampleClientFunctionalityProvider struct{
+	// here we can store application-specific data
+	scanner *bufio.Scanner
+}
+```
+
+We proceed by implementing the interface functions.\
 Here we define how we should respond to the messages coming from the server.
 
 ```golang
-type ExampleServerMessageHandler struct{}
-
 // executed each time the client gets a message from the server
-func (mh ExampleServerMessageHandler) OnServerMessage(message hurlean.Message) {
+func (fp ExampleClientFunctionalityProvider) OnServerMessage(clientInstance *hurlean.ClientInstance, message hurlean.Message) {
 	
 	if message.Type == "time" {
 		fmt.Printf("Current time: %v\n\n", message.Body)
@@ -172,21 +179,20 @@ func (mh ExampleServerMessageHandler) OnServerMessage(message hurlean.Message) {
 }
 ```
 
-We proceed by implementing `hurlean.ClientUpdater` interface.\
-It allows us to specify the logic of the client program, e.g. getting console input from the user.
+Now we need to implement functions that define the client application behavior.
 
 ```golang
-type ExampleClientUpdater struct{}
+// executed once when the client instance is initialized
+func (fp ExampleClientFunctionalityProvider) OnClientInit(clientInstance *hurlean.ClientInstance) {
+	// empty for this simple example
+}
 
 // executed continuously in a loop when the client is running
-func (cu ExampleClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
-	
-	// get data from the server state
-	scanner := clientInstance.State.(ExampleClientState).scanner
+func (fp ExampleClientFunctionalityProvider) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
 	
 	// get console input from the user
-	if scanner.Scan() {
-		switch (scanner.Text()) {
+	if fp.scanner.Scan() {
+		switch (fp.scanner.Text()) {
 		case "time":
 			getTimeMessage := hurlean.Message{
 				Type: "get current time",
@@ -201,29 +207,19 @@ func (cu ExampleClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInst
 }
 ```
 
-Much like with server state, we can define client state as well.\
-It'll be accessible via `hurlean.ClientInstance` pointer in `hurlean.ServerMessageHandler` method implementation.
-
-```golang
-// used to store application-specific data in the client instance
-type ExampleClientState struct{
-	scanner *bufio.Scanner
-}
-```
-
-And finally, the main function where we start the client application and provide interfaces implementations and the state.\
+And finally, the main function where we start the client application.\
 In the case of failure to connect to the server, error will be returned.
 
 ``` golang
 func main() {
 	
 	// init client state
-	var exampleClientState ExampleClientState = ExampleClientState{
+	exampleClientFunctionalityProvider := ExampleClientFunctionalityProvider{
 		scanner: bufio.NewScanner(os.Stdin),
 	}
 	
 	if err := hurlean.ConnectToServer(
-		"localhost", 4545, ExampleServerMessageHandler{}, ExampleClientUpdater{}, exampleClientState); err != nil {
+		"localhost", "4545", exampleClientFunctionalityProvider); err != nil {
 		fmt.Println(err)
 	}
 }
@@ -247,22 +243,25 @@ import (
 )
 
 
-type ExampleClientHandler struct{}
+type ExampleServerFunctionalityProvider struct{
+	// here we can store application-specific data
+	scanner *bufio.Scanner
+}
 
 // executed once for each client
-func (ch ExampleClientHandler) OnClientConnect(si *hurlean.ServerInstance, id uint32) {
+func (fp ExampleServerFunctionalityProvider) OnClientConnect(si *hurlean.ServerInstance, id uint32) {
 	
 	fmt.Printf("Client %v has connected to the server\n", id)
 }
 
 // executed once for each client
-func (ch ExampleClientHandler) OnClientDisconnect(si *hurlean.ServerInstance, id uint32) {
+func (fp ExampleServerFunctionalityProvider) OnClientDisconnect(si *hurlean.ServerInstance, id uint32) {
 	
 	fmt.Printf("Client %v has disconnected from the server\n", id)
 }
 
 // executed each time the server gets a message from a client
-func (ch ExampleClientHandler) OnClientMessage(si *hurlean.ServerInstance, id uint32, message hurlean.Message) {
+func (fp ExampleServerFunctionalityProvider) OnClientMessage(si *hurlean.ServerInstance, id uint32, message hurlean.Message) {
 	
 	fmt.Printf("Message from %v: %v\n", id, message)
 	
@@ -279,18 +278,17 @@ func (ch ExampleClientHandler) OnClientMessage(si *hurlean.ServerInstance, id ui
 	}
 }
 
-
-type ExampleServerUpdater struct{}
+// executed once when the server instance is initialized
+func (fp ExampleServerFunctionalityProvider) OnServerInit(serverInstance *hurlean.ServerInstance) {
+	// empty for this simple example
+}
 
 // executed continuously in a loop when the server is running
-func (su ExampleServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInstance) {
-	
-	// get data from the server state
-	scanner := serverInstance.State.(ExampleServerState).scanner
+func (fp ExampleServerFunctionalityProvider) OnServerUpdate(serverInstance *hurlean.ServerInstance) {
 	
 	// get console input from the server administrator (the app user)
-	if scanner.Scan() {
-		switch (scanner.Text()) {
+	if fp.scanner.Scan() {
+		switch (fp.scanner.Text()) {
 		case "exit":
 			serverInstance.Stop()
 			
@@ -301,20 +299,14 @@ func (su ExampleServerUpdater) OnServerUpdate(serverInstance *hurlean.ServerInst
 }
 
 
-// used to store application-specific data in the server instance
-type ExampleServerState struct{
-	scanner *bufio.Scanner
-}
-
-
 func main() {
 	
 	// init server state
-	var exampleServerState ExampleServerState = ExampleServerState{
+	exampleServerFunctionalityProvider := ExampleServerFunctionalityProvider{
 		scanner: bufio.NewScanner(os.Stdin),
 	}
 	
-	if err := hurlean.StartServer(4545, ExampleClientHandler{}, ExampleServerUpdater{}, exampleServerState); err != nil {
+	if err := hurlean.StartServer("4545", exampleServerFunctionalityProvider); err != nil {
 		fmt.Println(err)
 	}
 }
@@ -334,10 +326,13 @@ import (
 )
 
 
-type ExampleServerMessageHandler struct{}
+type ExampleClientFunctionalityProvider struct{
+	// here we can store application-specific data
+	scanner *bufio.Scanner
+}
 
 // executed each time the client gets a message from the server
-func (mh ExampleServerMessageHandler) OnServerMessage(message hurlean.Message) {
+func (fp ExampleClientFunctionalityProvider) OnServerMessage(clientInstance *hurlean.ClientInstance, message hurlean.Message) {
 	
 	if message.Type == "time" {
 		fmt.Printf("Current time: %v\n\n", message.Body)
@@ -346,18 +341,17 @@ func (mh ExampleServerMessageHandler) OnServerMessage(message hurlean.Message) {
 	}
 }
 
-
-type ExampleClientUpdater struct{}
+// executed once when the client instance is initialized
+func (fp ExampleClientFunctionalityProvider) OnClientInit(clientInstance *hurlean.ClientInstance) {
+	// empty for this simple example
+}
 
 // executed continuously in a loop when the client is running
-func (cu ExampleClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
-	
-	// get data from the server state
-	scanner := clientInstance.State.(ExampleClientState).scanner
+func (fp ExampleClientFunctionalityProvider) OnClientUpdate(clientInstance *hurlean.ClientInstance) {
 	
 	// get console input from the user
-	if scanner.Scan() {
-		switch (scanner.Text()) {
+	if fp.scanner.Scan() {
+		switch (fp.scanner.Text()) {
 		case "time":
 			getTimeMessage := hurlean.Message{
 				Type: "get current time",
@@ -372,21 +366,15 @@ func (cu ExampleClientUpdater) OnClientUpdate(clientInstance *hurlean.ClientInst
 }
 
 
-// used to store application-specific data in the client instance
-type ExampleClientState struct{
-	scanner *bufio.Scanner
-}
-
-
 func main() {
 	
 	// init client state
-	var exampleClientState ExampleClientState = ExampleClientState{
+	exampleClientFunctionalityProvider := ExampleClientFunctionalityProvider{
 		scanner: bufio.NewScanner(os.Stdin),
 	}
 	
 	if err := hurlean.ConnectToServer(
-		"localhost", 4545, ExampleServerMessageHandler{}, ExampleClientUpdater{}, exampleClientState); err != nil {
+		"localhost", "4545", exampleClientFunctionalityProvider); err != nil {
 		fmt.Println(err)
 	}
 }
