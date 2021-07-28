@@ -139,7 +139,7 @@ func StartServer(port string, serverFunctionalityProvider ServerFunctionalityPro
 		}
 		
 		// DEBUG MESSAGE
-		if (debug) { fmt.Println("__hurlean__  ServerUpdate has stopped") }
+		if (EnableDebug) { fmt.Println("__hurlean__  ServerUpdate has stopped") }
 		
 		ln.Close()
 		
@@ -166,7 +166,7 @@ func StartServer(port string, serverFunctionalityProvider ServerFunctionalityPro
 	}
 	
 	// DEBUG MESSAGE
-	if (debug) { fmt.Println("__hurlean__  ServerListen has stopped") }
+	if (EnableDebug) { fmt.Println("__hurlean__  ServerListen has stopped") }
 	
 	clientConnectionsWaitGroup.Wait()
 	
@@ -196,7 +196,7 @@ func handleClient(
 	disconnectClient(serverInstance, id, conn, serverFunctionalityProvider)
 	
 	// DEBUG MESSAGE
-	if (debug) { fmt.Println("__hurlean__  HandleClient has stopped") }
+	if (EnableDebug) { fmt.Println("__hurlean__  HandleClient has stopped") }
 	
 	clientConnectionsWaitGroup.Done()
 }
@@ -252,7 +252,7 @@ func listenToMessages(
 	close(doneChannel)
 	
 	// DEBUG MESSAGE
-	if (debug) { fmt.Println("__hurlean__  Sender has stopped") }
+	if (EnableDebug) { fmt.Println("__hurlean__  Sender has stopped") }
 	
 	wg.Done()
 }
@@ -276,7 +276,7 @@ func handleMessage(
 	}
 	
 	// DEBUG MESSAGE
-	if (debug) { fmt.Println("__hurlean__  Receiver has stopped") }
+	if (EnableDebug) { fmt.Println("__hurlean__  Receiver has stopped") }
 	
 	wg.Done()
 }

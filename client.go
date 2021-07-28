@@ -85,7 +85,7 @@ func ConnectToServer(ip string, port string, clientFunctionalityProvider ClientF
 		}
 		
 		// DEBUG MESSAGE
-		if (debug) { fmt.Println("__hurlean__  ClientUpdate has stopped") }
+		if (EnableDebug) { fmt.Println("__hurlean__  ClientUpdate has stopped") }
 		
 		clientUpdateWaitGroup.Done()
 	}(&clientInstance, &clientUpdateWaitGroup)
@@ -119,7 +119,7 @@ func ConnectToServer(ip string, port string, clientFunctionalityProvider ClientF
 	clientInstance.Connected = false
 	
 	// DEBUG MESSAGE
-	if (debug) { fmt.Println("__hurlean__  ClientRead has stopped") }
+	if (EnableDebug) { fmt.Println("__hurlean__  ClientRead has stopped") }
 	
 	clientUpdateWaitGroup.Wait()
 	

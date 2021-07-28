@@ -9,4 +9,4 @@ type Message struct {
 
 
 // controls the debug prints
-var debug bool = true
+var EnableDebug bool = true
